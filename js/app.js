@@ -62,7 +62,11 @@ function gotoPage(id, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   if(el) el.classList.add('active');
-  const titles = {payroll:{JP:'給与明細',KR:'급여 명세'},history:{JP:'支給履歴',KR:'지급 이력'},employees:{JP:'従業員管理',KR:'직원 관리'},rates:{JP:'保険料率設定',KR:'보험료율 설정'},annual:{JP:'年間給与一覧',KR:'연간 급여 일람'}};
+  else {
+    const sideNav = document.querySelector(`.nav-item[data-page="${id}"]`);
+    if(sideNav) sideNav.classList.add('active');
+  }
+  const titles = {payroll:{JP:'給与明細',KR:'급여 명세'},history:{JP:'支給履歴',KR:'지급 이력'},employees:{JP:'従業員管理',KR:'직원 관리'},rates:{JP:'保険料率設定',KR:'보험료율 설정'},annual:{JP:'年間給与一覧',KR:'연간 급여 일람'},gas:{JP:'Google連携設定',KR:'Google 연동 설정'}};
   const t = titles[id];
   if(t) document.getElementById('topbar-title').textContent = t[LANG];
   document.getElementById('btn-save').style.display = id==='payroll' ? '' : 'none';
@@ -70,6 +74,7 @@ function gotoPage(id, el) {
   if(id==='employees') renderEmpList();
   if(id==='rates') renderRatesPage();
   if(id==='annual') { buildAnnualEmpSel(); renderAnnual(); }
+  if(id==='gas') openGasModal();
 }
 
 

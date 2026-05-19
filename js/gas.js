@@ -199,7 +199,6 @@ function saveGasUrl() {
   updateGasStatus();
   const actionsEl = document.getElementById('gas-actions');
   if(actionsEl) actionsEl.style.display = '';
-  closeModal('modal-gas');
   showToast(LANG==='JP'?'Google連携URLを保存しました ✓':'Google 연동 URL 저장됨 ✓','s');
 }
 
@@ -276,7 +275,6 @@ async function importAllFromGas() {
     if(statusEl) statusEl.innerHTML='<span style="color:var(--green)">'+msg+'</span>';
     renderEmpSelect(); loadPayrollForm(); applyRatesForYM(currentYear,currentMonth);
     showToast(jp?'ダウンロード完了 ✓':'가져오기 완료 ✓','s');
-    closeModal('modal-gas');
   } catch(err){
     if(statusEl) statusEl.innerHTML='<span style="color:var(--red)">❌ '+err.message+'</span>';
     console.error('importAllFromGas error:', err);
@@ -284,7 +282,7 @@ async function importAllFromGas() {
 }
 const GAS_CODE = '// WisePay GAS 코드는 별도 파일(WisePay_GAS_code.gs)을 사용해 주세요';
 
-// GAS 모달 열기
+// GAS 페이지 준비
 function openGasModal() {
   const preview = document.getElementById('gasCodePreview');
   if (preview) preview.textContent = GAS_CODE;
@@ -292,7 +290,6 @@ function openGasModal() {
   if (inp) inp.value = gasUrl || '';
   const actionsEl = document.getElementById('gas-actions');
   if (actionsEl) actionsEl.style.display = gasUrl ? '' : 'none';
-  openModal('modal-gas');
 }
 
 // GAS 코드 클립보드 복사

@@ -1,6 +1,6 @@
 <!-- ================================================
   WisePay (給与Pro by Wisewires)
-  모듈 분리版 — 2026-05-20 04:11
+  수정: 2026-05-20 13:20 — Google 연동 설정을 팝업 모달에서 전용 페이지로 전환함
 ================================================ -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -39,7 +39,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       <span id="t-nav-rates">保険料率設定</span>
     </div>
-    <div class="nav-item" onclick="openGasModal()">
+    <div class="nav-item" data-page="gas" onclick="gotoPage('gas', this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <span id="t-nav-gas">Google連携設定</span>
     </div>
@@ -59,7 +59,7 @@
     <span class="page-title" id="topbar-title">給与明細</span>
   </div>
   <div class="topbar-r">
-    <div class="gas-bar" onclick="openModal('modal-gas')">
+    <div class="gas-bar" onclick="gotoPage('gas')">
       <span class="sdot sdot-ng" id="gasDot"></span>
       <span id="gasText">Google未連携</span>
     </div>
@@ -293,6 +293,78 @@
   </div>
 </div>
 
+<!-- ══ PAGE: GAS SETTINGS ══ -->
+<div class="page" id="page-gas">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap;">
+    <h2 style="font-size:14px;font-weight:600;" id="t-gas-page-title">Google連携設定</h2>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div style="background:var(--accent2);border-bottom:1px solid var(--border);padding:14px 18px;font-size:12px;color:#3730a3;">
+      Google Apps Script を使って給与データをスプレッドシートに自動保存・同期できます。
+    </div>
+    <div style="padding:18px;">
+      <div class="gas-step">
+        <div class="gas-num">1</div>
+        <div>
+          <div class="gas-step-title">Google スプレッドシートを新規作成</div>
+          <div class="gas-step-desc">「WisePay」という名前でスプレッドシートを作成してください。</div>
+        </div>
+      </div>
+      <div class="gas-step">
+        <div class="gas-num">2</div>
+        <div>
+          <div class="gas-step-title">拡張機能 → Apps Script を開く</div>
+          <div class="gas-step-desc">メニュー「拡張機能」→「Apps Script」→ code.gs に以下のコードを貼り付けてください。</div>
+          <div style="margin-top:8px;">
+            <div style="background:#1e1e2e;color:#cdd6f4;border-radius:var(--r2);padding:10px 12px;font-size:11px;font-family:monospace;max-height:120px;overflow-y:auto;border:1px solid #45475a;">
+              <div style="color:#6c7086;margin-bottom:4px;">// ↓ このコードを code.gs にそのまま貼り付けてください</div>
+              <div id="gasCodePreview" style="white-space:pre;"></div>
+            </div>
+            <button class="btn btn-sm" style="margin-top:6px;" onclick="copyGasCode()">📋 コードをコピー</button>
+          </div>
+        </div>
+      </div>
+      <div class="gas-step">
+        <div class="gas-num">3</div>
+        <div>
+          <div class="gas-step-title">ウェブアプリとしてデプロイ</div>
+          <div class="gas-step-desc">
+            「デプロイ」→「新しいデプロイ」→ 種類:「ウェブアプリ」<br>
+            アクセス権限:「全員」→ デプロイ → <strong>URLをコピー</strong><br>
+            <span style="color:var(--orange);font-size:11px;">※ テスト中は「テストデプロイ」(Dev URL) を使用してください</span>
+          </div>
+        </div>
+      </div>
+      <div class="gas-step">
+        <div class="gas-num">4</div>
+        <div>
+          <div class="gas-step-title">WebアプリのURLを入力</div>
+          <input class="gas-url-input" id="gasUrlInput" placeholder="https://script.google.com/macros/s/...../dev">
+        </div>
+      </div>
+      <div id="gas-actions" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;">データ同期</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="exportAllToGas()">
+            ⬆️ ローカル → Google（全データ書き出し）
+          </button>
+          <button class="btn btn-sm" onclick="importAllFromGas()">
+            ⬇️ Google → ローカル（全データ読み込み）
+          </button>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px;">
+          ※ 初回は「ローカル → Google」で既存データをアップロードしてください
+        </div>
+        <div id="gas-sync-status" style="margin-top:8px;font-size:12px;"></div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid var(--border);background:var(--surface);">
+      <button class="btn btn-sm" onclick="testGasConnection()" id="t-gas-test">🔌 接続テスト</button>
+      <button class="btn btn-primary" onclick="saveGasUrl()" id="t-gas-save">保存して連携</button>
+    </div>
+  </div>
+</div>
+
 </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /layout -->
@@ -314,92 +386,6 @@
     </div>
   </div>
 </div>
-
-<!-- GAS modal -->
-<div class="overlay" id="modal-gas">
-  <div class="modal" style="width:580px;max-height:85vh;overflow-y:auto;">
-    <div class="modal-head">
-      <span class="modal-title" id="t-gas-title">🔗 Google スプレッドシート連携設定</span>
-      <span class="modal-x" onclick="closeModal('modal-gas')">✕</span>
-    </div>
-    <div class="modal-body">
-      <div style="background:var(--accent2);border:1px solid var(--accent3);border-radius:var(--r2);padding:9px 11px;font-size:12px;color:#3730a3;margin-bottom:14px;" id="t-gas-intro">
-        Google Apps Script を使って給与データをスプレッドシートに自動保存・同期できます。
-      </div>
-
-      <!-- Step 1 -->
-      <div class="gas-step">
-        <div class="gas-num">1</div>
-        <div>
-          <div class="gas-step-title">Google スプレッドシートを新規作成</div>
-          <div class="gas-step-desc">「WisePay」という名前でスプレッドシートを作成してください。</div>
-        </div>
-      </div>
-
-      <!-- Step 2 -->
-      <div class="gas-step">
-        <div class="gas-num">2</div>
-        <div>
-          <div class="gas-step-title">拡張機能 → Apps Script を開く</div>
-          <div class="gas-step-desc">メニュー「拡張機能」→「Apps Script」→ code.gs に以下のコードを貼り付けてください。</div>
-          <div style="margin-top:8px;">
-            <a href="https://github.com" target="_blank" style="display:none;">GASコード</a>
-            <div style="background:#1e1e2e;color:#cdd6f4;border-radius:var(--r2);padding:10px 12px;font-size:11px;font-family:monospace;max-height:120px;overflow-y:auto;border:1px solid #45475a;">
-              <div style="color:#6c7086;margin-bottom:4px;">// ↓ このコードを code.gs にそのまま貼り付けてください</div>
-              <div id="gasCodePreview" style="white-space:pre;"></div>
-            </div>
-            <button class="btn btn-sm" style="margin-top:6px;" onclick="copyGasCode()">📋 コードをコピー</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 3 -->
-      <div class="gas-step">
-        <div class="gas-num">3</div>
-        <div>
-          <div class="gas-step-title">ウェブアプリとしてデプロイ</div>
-          <div class="gas-step-desc">
-            「デプロイ」→「新しいデプロイ」→ 種類:「ウェブアプリ」<br>
-            アクセス権限:「全員」→ デプロイ → <strong>URLをコピー</strong><br>
-            <span style="color:var(--orange);font-size:11px;">※ テスト中は「テストデプロイ」(Dev URL) を使用してください</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 4 -->
-      <div class="gas-step">
-        <div class="gas-num">4</div>
-        <div>
-          <div class="gas-step-title">WebアプリのURLを入力</div>
-          <input class="gas-url-input" id="gasUrlInput" placeholder="https://script.google.com/macros/s/...../dev">
-        </div>
-      </div>
-
-      <!-- 연동 후 내보내기/가져오기 -->
-      <div id="gas-actions" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
-        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;">データ同期</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-primary btn-sm" onclick="exportAllToGas()">
-            ⬆️ ローカル → Google（全データ書き出し）
-          </button>
-          <button class="btn btn-sm" onclick="importAllFromGas()">
-            ⬇️ Google → ローカル（全データ読み込み）
-          </button>
-        </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:6px;">
-          ※ 初回は「ローカル → Google」で既存データをアップロードしてください
-        </div>
-        <div id="gas-sync-status" style="margin-top:8px;font-size:12px;"></div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn" onclick="closeModal('modal-gas')" id="t-gas-cancel">キャンセル</button>
-      <button class="btn btn-sm" onclick="testGasConnection()" id="t-gas-test">🔌 接続テスト</button>
-      <button class="btn btn-primary" onclick="saveGasUrl()" id="t-gas-save">保存して連携</button>
-    </div>
-  </div>
-</div>
-
 
 <script src="js/state.js"></script>
 <script src="js/utils.js"></script>
