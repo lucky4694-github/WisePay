@@ -1,9 +1,11 @@
-﻿'use strict';
+'use strict';
 async function exportAllToGas() {
   if (!gasUrl) {
     showToast(LANG === 'JP' ? '先にURLを設定してください' : '먼저 URL을 설정해 주세요', 'w');
     return;
   }
+  const jp = LANG === 'JP';
+  if (!confirm(jp ? 'ローカルのデータをGoogleに上書きします。よろしいですか？' : '로컬 데이터로 Google을 덮어씁니다. 계속하시겠습니까?')) return;
 
   const statusEl = document.getElementById('gas-sync-status');
   if (statusEl) {
@@ -44,7 +46,7 @@ async function exportAllToGas() {
       })
     });
 
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, 3000));
 
     const check = await gasRequest({ action: 'getAll' });
     const saved = check.data || check;
