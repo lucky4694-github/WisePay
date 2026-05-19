@@ -92,7 +92,7 @@ function renderEmpFormFields(emp) {
         oninput="validateEmpNo(this);markDirty()" onblur="padEmpNo(this)"
         onkeydown="focusNext(event,'f-name')">
       <div class="form-error" id="f-no-err"></div>
-      <div class="form-hint">${jp?'数字のみ。1桁入力で自動ゼロ埋め（例：1→0001）':'숫자만 입력. 자동 0패딩（예：1→0001）'}</div>
+      <div class="form-hint">${jp?'半角数字4桁のみ（全角不可）。1桁で自動ゼロ埋め（例：1→0001）':'반각 숫자 4자리만（전각 불가）. 1자리 입력 시 0패딩（예：1→0001）'}</div>
     </div>
     <div class="form-group">
       <label class="form-label">${jp?'氏名':'이름'}</label>
@@ -107,15 +107,17 @@ function renderEmpFormFields(emp) {
     <div class="form-group">
       <label class="form-label">${jp?'入社日':'입사일'}</label>
       <input class="form-input" id="f-join" type="text" value="${v('join')}"
-        placeholder="YYYY-MM-DD"
-        onblur="validateDateText(this,'f-join-err')" oninput="markDirty()">
+        placeholder="YYYY-MM-DD" autocomplete="off"
+        onfocus="onDateFocus(this)" onblur="onDateBlur(this,'f-join-err')"
+        onkeydown="onDateKeydown(event,'f-birth','f-join-err')" oninput="onDateInput(this)">
       <div class="form-error" id="f-join-err"></div>
     </div>
     <div class="form-group">
       <label class="form-label">${jp?'生年月日':'생년월일'}</label>
       <input class="form-input" id="f-birth" type="text" value="${v('birth')}"
-        placeholder="YYYY-MM-DD"
-        onblur="validateDateText(this,'f-birth-err')" oninput="markDirty()">
+        placeholder="YYYY-MM-DD" autocomplete="off"
+        onfocus="onDateFocus(this)" onblur="onDateBlur(this,'f-birth-err')"
+        onkeydown="onDateKeydown(event,'f-kaigo','f-birth-err')" oninput="onDateInput(this)">
       <div class="form-error" id="f-birth-err"></div>
     </div>
     <div class="form-group">
@@ -166,9 +168,9 @@ function renderEmpFormFields(emp) {
       </div>
       <div class="form-group" style="margin:0;">
         <input class="form-input" id="fam-birth" type="text"
-          placeholder="YYYY-MM-DD"
-          onblur="validateDateText(this,'fam-birth-err')"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();addFam();}">
+          placeholder="YYYY-MM-DD" autocomplete="off"
+          onfocus="onDateFocus(this)" onblur="onDateBlur(this,'fam-birth-err')"
+          onkeydown="onDateKeydown(event,'addFam','fam-birth-err')" oninput="onDateInput(this)">
         <div class="form-error" id="fam-birth-err"></div>
       </div>
       <button class="btn btn-success btn-sm" onclick="addFam()">${jp?'追加':'추가'}</button>
@@ -183,6 +185,191 @@ function renderEmpFormFields(emp) {
   document.getElementById('empFormBody').innerHTML = html;
   renderFamTable();
   updateFamCount();
+}
+
+// ══ DATE INPUT (mask + compact) ══
+const DATE_MASK = 'YYYY-MM-DD';
+const DATE_SLOT_IDX = [0, 1, 2, 3, 5, 6, 8, 9];
+
+function normalizeDateInput(raw) {
+  const digits = String(raw || '').replace(/\D/g, '').slice(0, 8);
+  if (digits.length !== 8) return null;
+  return `${digits.slice(0, 4)}-${digits.slice(4, 6)}-${digits.slice(6, 8)}`;
+}
+
+function isDateMaskValue(v) {
+  if (!v || v === DATE_MASK) return true;
+  return /^[\dY]{4}-[\dM]{2}-[\dD]{2}$/.test(v);
+}
+
+function formatDateDigits(digits) {
+  const chars = DATE_MASK.split('');
+  for (let i = 0; i < digits.length && i < 8; i++) {
+    chars[DATE_SLOT_IDX[i]] = digits[i];
+  }
+  return chars.join('');
+}
+
+function dateDigitsFromValue(v) {
+  let digits = '';
+  for (const i of DATE_SLOT_IDX) {
+    if (/\d/.test(v[i])) digits += v[i];
+  }
+  return digits;
+}
+
+function setDateCaret(input, pos) {
+  const p = Math.max(0, Math.min(pos, input.value.length));
+  input.setSelectionRange(p, p + 1);
+}
+
+function clearDateErrorForInput(input) {
+  const errMap = { 'f-join': 'f-join-err', 'f-birth': 'f-birth-err', 'fam-birth': 'fam-birth-err' };
+  const errEl = document.getElementById(errMap[input.id] || '');
+  if (errEl) errEl.textContent = '';
+  input.classList.remove('error');
+}
+
+function onDateFocus(input) {
+  const norm = normalizeDateInput(input.value);
+  if (norm) {
+    input.value = norm;
+    return;
+  }
+  if (!input.value.trim() || isDateMaskValue(input.value)) {
+    input.value = DATE_MASK;
+    requestAnimationFrame(() => setDateCaret(input, DATE_SLOT_IDX[0]));
+  }
+}
+
+function finalizeDateInput(input) {
+  const norm = normalizeDateInput(input.value);
+  if (norm) {
+    input.value = norm;
+    return;
+  }
+  if (isDateMaskValue(input.value)) input.value = '';
+}
+
+function onDateBlur(input, errId) {
+  finalizeDateInput(input);
+  validateDateText(input, errId);
+}
+
+function onDateInput(input) {
+  const digits = input.value.replace(/\D/g, '');
+  if (digits.length >= 8) {
+    input.value = normalizeDateInput(digits);
+  } else if (digits.length > 0 && !/[YMD]/.test(input.value)) {
+    input.value = formatDateDigits(digits);
+  }
+  clearDateErrorForInput(input);
+  markDirty();
+}
+
+function handleDateDigit(input, digit) {
+  let digits;
+  const allSelected = input.selectionStart === 0 && input.selectionEnd === input.value.length;
+  if (isDateMaskValue(input.value)) {
+    digits = (dateDigitsFromValue(input.value) + digit).slice(0, 8);
+  } else if (normalizeDateInput(input.value) && allSelected) {
+    digits = digit;
+  } else if (normalizeDateInput(input.value)) {
+    digits = (dateDigitsFromValue(input.value) + digit).slice(0, 8);
+  } else {
+    digits = digit;
+  }
+  if (digits.length === 8) {
+    input.value = normalizeDateInput(digits);
+  } else {
+    input.value = formatDateDigits(digits);
+    requestAnimationFrame(() => setDateCaret(input, DATE_SLOT_IDX[digits.length]));
+  }
+  clearDateErrorForInput(input);
+}
+
+function handleDateBackspace(input) {
+  let digits = input.value.replace(/\D/g, '').slice(0, 8);
+  if (!digits.length) {
+    input.value = DATE_MASK;
+    requestAnimationFrame(() => setDateCaret(input, DATE_SLOT_IDX[0]));
+    clearDateErrorForInput(input);
+    return;
+  }
+  digits = digits.slice(0, -1);
+  input.value = digits.length ? formatDateDigits(digits) : DATE_MASK;
+  const pos = digits.length < 8 ? DATE_SLOT_IDX[digits.length] : DATE_SLOT_IDX[7];
+  requestAnimationFrame(() => setDateCaret(input, pos));
+  clearDateErrorForInput(input);
+}
+
+function isDateFieldEmpty(v) {
+  const t = (v || '').trim();
+  if (!t || t === DATE_MASK) return true;
+  return isDateMaskValue(t) && dateDigitsFromValue(t).length === 0;
+}
+
+function tryAdvanceDateField(input, nextId, errId) {
+  if (isDateFieldEmpty(input.value)) {
+    input.value = '';
+    if (errId) {
+      const errEl = document.getElementById(errId);
+      if (errEl) errEl.textContent = '';
+      input.classList.remove('error');
+    }
+  } else {
+    const norm = normalizeDateInput(input.value);
+    if (norm) input.value = norm;
+    if (!validateDateText(input, errId)) return false;
+  }
+  if (nextId === 'addFam') {
+    addFam();
+    return true;
+  }
+  const next = document.getElementById(nextId);
+  if (next) next.focus();
+  return true;
+}
+
+function onDateKeydown(event, nextId, errId) {
+  const input = event.target;
+
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    if (!tryAdvanceDateField(input, nextId, errId)) {
+      input.focus();
+    }
+    return;
+  }
+
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    input.value = '';
+    input.blur();
+    return;
+  }
+
+  if (event.key === 'Tab' || event.key.startsWith('Arrow') || event.key === 'Home' || event.key === 'End') {
+    return;
+  }
+
+  if (/^\d$/.test(event.key)) {
+    event.preventDefault();
+    handleDateDigit(input, event.key);
+    markDirty();
+    return;
+  }
+
+  if (event.key === 'Backspace') {
+    event.preventDefault();
+    handleDateBackspace(input);
+    markDirty();
+    return;
+  }
+
+  if (event.key.length === 1) {
+    event.preventDefault();
+  }
 }
 
 // ══ DATE VALIDATION ══
@@ -214,14 +401,12 @@ function validateDateText(input, errId) {
       ? `${m}月は${maxDay}日までです。入力し直してください`
       : `${m}월은 ${maxDay}일까지입니다. 다시 입력해 주세요`;
     input.classList.add('error');
-    input.value = '';
     return false;
   }
   const d = new Date(y, m-1, day);
   if(d > new Date()) {
     errEl.textContent = jp ? '未来の日付は入力できません' : '미래 날짜는 입력할 수 없습니다';
     input.classList.add('error');
-    input.value = '';
     return false;
   }
   errEl.textContent=''; input.classList.remove('error'); return true;
@@ -248,9 +433,14 @@ function padEmpNo(input) {
   validateEmpNo(input);
 }
 
+// 전각 숫자(０１２３) → 반각
+function toHalfDigits(str) {
+  return String(str).replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+}
+
 // ══ EMP NO VALIDATION ══
 function validateEmpNo(input) {
-  input.value = input.value.replace(/\D/g,'');
+  input.value = toHalfDigits(input.value).replace(/\D/g, '');
   if(input.value.length > 4) input.value = input.value.slice(0,4);
   const errEl = document.getElementById('f-no-err');
   if(!errEl) return;
