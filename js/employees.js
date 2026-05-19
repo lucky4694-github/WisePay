@@ -340,6 +340,16 @@ function handleDateDigit(input, digit) {
   } else {
     digits = digit;
   }
+
+  // 월 첫 자리(index 4)가 2~9이면 앞에 0 자동 추가 → 02~09
+  if (digits.length === 5 && parseInt(digits[4]) >= 2) {
+    digits = digits.slice(0, 4) + '0' + digits[4];
+  }
+  // 일 첫 자리(index 6)가 4~9이면 앞에 0 자동 추가 → 04~09
+  if (digits.length === 7 && parseInt(digits[6]) >= 4) {
+    digits = digits.slice(0, 6) + '0' + digits[6];
+  }
+
   if (digits.length === 8) {
     input.value = normalizeDateInput(digits);
   } else {
