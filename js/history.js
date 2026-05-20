@@ -1,13 +1,16 @@
-﻿// 수정: 2026-05-20 12:32 — 사원번호 표시를 항상 4자리(padStart)로 통일
+﻿// 수정: 2026-05-20 17:55 — 연간 일람 미표시 버그 수정 (sel.value 미지정), 월별 요율 분리 적용
 'use strict';
 function buildAnnualEmpSel() {
   const sel = document.getElementById('annualEmpSel');
+  const prev = sel.value;
   sel.innerHTML = '';
   employees.forEach((e,i) => {
     const o = document.createElement('option');
     o.value = i; o.textContent = `${e.name}（${String(e.no).padStart(4,'0')}）`;
     sel.appendChild(o);
   });
+  // 이전 선택 유지, 없으면 첫 번째 직원 선택
+  sel.value = (prev !== '' && employees[parseInt(prev)]) ? prev : (employees.length ? '0' : '');
 }
 
 function calcMonthData(emp, year, month) {
@@ -23,12 +26,14 @@ function calcMonthData(emp, year, month) {
     const jumin=parseInt((d['k-jumin']||'0').replace(/,/g,'')), nencho=parseInt((d['k-nencho']||'0').replace(/,/g,''));
     const totalPay = base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
     const hyo = getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field);
-    const kenko=Math.floor(hyo*rates.kenko/100/2);
-    const kaigo2=isKaigo(emp)?Math.floor(hyo*rates.kaigo/100/2):0;
-    const kodomo=Math.floor(hyo*rates.kodomo/100/2);
-    const nenkin=Math.floor(hyo*rates.nenkin/100/2);
+    // 해당 월의 정확한 요율 사용
+    const r = getRatesForYM(year, month);
+    const kenko=Math.floor(hyo*r.kenko/100/2);
+    const kaigo2=isKaigo(emp)?Math.floor(hyo*r.kaigo/100/2):0;
+    const kodomo=Math.floor(hyo*r.kodomo/100/2);
+    const nenkin=Math.floor(hyo*r.nenkin/100/2);
     const koyoEnabled = emp.koyo !== 'no';
-    const koyo=koyoEnabled ? Math.round(totalPay*rates.koyo/100) : 0;
+    const koyo=koyoEnabled ? Math.round(totalPay*r.koyo/100) : 0;
     const shakai=kenko+kaigo2+kodomo+nenkin+koyo;
     const shotokuBase = totalPay-commute-shakai;
     const fuyou = parseInt(emp.fuyouCount)||0;
