@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-20 17:45 — 급여 입력란 포커스 시 0 클리어, 이탈 시 0 복원
+﻿// 수정: 2026-05-20 18:30 — 구버전 급여 키(비패딩 사원번호) → 4자리 키로 자동 마이그레이션
 'use strict';
 // ══ INIT ══
 window.addEventListener('DOMContentLoaded', () => {
@@ -24,6 +24,8 @@ window.addEventListener('DOMContentLoaded', () => {
   if(migrated) localStorage.setItem(LS.rateHistory, JSON.stringify(rateHistory));
   // 구버전 단일 rates 호환
   try { const s = localStorage.getItem(LS.rates); if(s) { const r=JSON.parse(s); rates={...rates,...r}; } } catch(e){}
+  // 구버전 급여 키 마이그레이션: 비패딩 사원번호(kyuyo_p_1_...) → 4자리(kyuyo_p_0001_...)
+  migratePayrollKeys();
   gasUrl = localStorage.getItem(LS.gas) || '';
   LANG = localStorage.getItem(LS.lang) || 'KR';
   document.getElementById('gasUrlInput').value = gasUrl;
@@ -90,4 +92,26 @@ function gotoPage(id, el) {
   if(id==='gas') openGasModal();
 }
 
+// 구버전 급여 localStorage 키 마이그레이션
+// kyuyo_p_1_2026_5 → kyuyo_p_0001_2026_5 형태로 일괄 변환
+function migratePayrollKeys() {
+  try {
+    employees.forEach(emp => {
+      const paddedNo = String(emp.no).padStart(4, '0');
+      const numericNo = String(parseInt(paddedNo, 10)); // "0001" → "1"
+      if(paddedNo === numericNo) return; // 이미 같으면 스킵
+      for(let y = 2023; y <= 2027; y++) {
+        for(let m = 1; m <= 12; m++) {
+          const oldKey = `kyuyo_p_${numericNo}_${y}_${m}`;
+          const newKey = `kyuyo_p_${paddedNo}_${y}_${m}`;
+          const oldData = localStorage.getItem(oldKey);
+          if(oldData && !localStorage.getItem(newKey)) {
+            localStorage.setItem(newKey, oldData);
+            localStorage.removeItem(oldKey);
+          }
+        }
+      }
+    });
+  } catch(e) {}
+}
 
