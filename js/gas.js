@@ -273,6 +273,7 @@ async function importAllFromGas() {
     }
     const msg=jp?'✅ 完了！従業員'+(d.employees||[]).length+'名、給与'+(d.payrolls||[]).length+'件':'✅ 완료! 직원 '+(d.employees||[]).length+'명, 급여 '+(d.payrolls||[]).length+'건';
     if(statusEl) statusEl.innerHTML='<span style="color:var(--green)">'+msg+'</span>';
+    if(employees.length > 0 && currentEmpIdx < 0) currentEmpIdx = 0;
     renderEmpSelect(); loadPayrollForm(); applyRatesForYM(currentYear,currentMonth);
     showToast(jp?'ダウンロード完了 ✓':'가져오기 완료 ✓','s');
   } catch(err){
@@ -302,12 +303,12 @@ function updateGasUrlBadge() {
   const jp = LANG === 'JP';
   badge.style.display = 'inline-block';
   if (url.endsWith('/exec')) {
-    badge.textContent = jp ? '✅ 本番デプロイ (exec)' : '✅ 배포판 (exec)';
+    badge.textContent = jp ? '✅ デプロイ (exec)' : '✅ 배포 (exec)';
     badge.style.background = '#dcfce7';
     badge.style.color = '#166534';
     badge.style.borderColor = '#bbf7d0';
   } else if (url.endsWith('/dev')) {
-    badge.textContent = jp ? '🧪 テストデプロイ (dev)' : '🧪 테스트용 (dev)';
+    badge.textContent = jp ? '🧪 テストデプロイ (dev)' : '🧪 테스트 배포 (dev)';
     badge.style.background = '#fef3c7';
     badge.style.color = '#92400e';
     badge.style.borderColor = '#fde68a';
