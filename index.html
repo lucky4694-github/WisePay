@@ -1,6 +1,6 @@
 <!-- ================================================
   WisePay (給与Pro by Wisewires)
-  수정: 2026-05-20 18:30 — 구버전 급여 키 자동 마이그레이션 추가 (app.js)
+  수정: 2026-05-21 00:23 — Google 연동 설정 언어 전환 지원 및 동기화 버튼 카드 UI 개선 (index.html, i18n.js, styles.css)
 ================================================ -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -296,71 +296,77 @@
 <!-- ══ PAGE: GAS SETTINGS ══ -->
 <div class="page" id="page-gas">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap;">
-    <h2 style="font-size:14px;font-weight:600;" id="t-gas-page-title">Google連携設定</h2>
+    <h2 style="font-size:14px;font-weight:600;" id="t-gas-page-title">Google 연동 설정</h2>
   </div>
   <div class="card" style="padding:0;overflow:hidden;">
-    <div style="background:var(--accent2);border-bottom:1px solid var(--border);padding:14px 18px;font-size:12px;color:#3730a3;">
-      Google Apps Script を使って給与データをスプレッドシートに自動保存・同期できます。
+    <div id="t-gas-desc" style="background:var(--accent2);border-bottom:1px solid var(--border);padding:14px 18px;font-size:12px;color:#3730a3;">
+      Google Apps Script를 사용해 급여 데이터를 스프레드시트에 자동 저장·동기화할 수 있습니다.
     </div>
     <div style="padding:18px;">
       <div class="gas-step">
         <div class="gas-num">1</div>
         <div>
-          <div class="gas-step-title">Google スプレッドシートを新規作成</div>
-          <div class="gas-step-desc">「WisePay」という名前でスプレッドシートを作成してください。</div>
+          <div class="gas-step-title" id="t-gas-step1-title">Google 스프레드시트 새로 만들기</div>
+          <div class="gas-step-desc" id="t-gas-step1-desc">「WisePay」라는 이름으로 스프레드시트를 만들어 주세요.</div>
         </div>
       </div>
       <div class="gas-step">
         <div class="gas-num">2</div>
         <div>
-          <div class="gas-step-title">拡張機能 → Apps Script を開く</div>
-          <div class="gas-step-desc">メニュー「拡張機能」→「Apps Script」→ code.gs に以下のコードを貼り付けてください。</div>
+          <div class="gas-step-title" id="t-gas-step2-title">확장 프로그램 → Apps Script 열기</div>
+          <div class="gas-step-desc" id="t-gas-step2-desc">메뉴 「확장 프로그램」→「Apps Script」→ code.gs에 아래 코드를 붙여 넣으세요.</div>
           <div style="margin-top:8px;">
             <div style="background:#1e1e2e;color:#cdd6f4;border-radius:var(--r2);padding:10px 12px;font-size:11px;font-family:monospace;max-height:120px;overflow-y:auto;border:1px solid #45475a;">
-              <div style="color:#6c7086;margin-bottom:4px;">// ↓ このコードを code.gs にそのまま貼り付けてください</div>
+              <div id="t-gas-code-comment" style="color:#6c7086;margin-bottom:4px;">// ↓ 이 코드를 code.gs에 그대로 붙여 넣으세요</div>
               <div id="gasCodePreview" style="white-space:pre;"></div>
             </div>
-            <button class="btn btn-sm" style="margin-top:6px;" onclick="copyGasCode()">📋 コードをコピー</button>
+            <button class="btn btn-sm" style="margin-top:6px;" onclick="copyGasCode()" id="t-gas-copy-btn">📋 코드 복사</button>
           </div>
         </div>
       </div>
       <div class="gas-step">
         <div class="gas-num">3</div>
         <div>
-          <div class="gas-step-title">ウェブアプリとしてデプロイ</div>
-          <div class="gas-step-desc">
-            「デプロイ」→「新しいデプロイ」→ 種類:「ウェブアプリ」<br>
-            アクセス権限:「全員」→ デプロイ → <strong>URLをコピー</strong><br>
-            <span style="color:var(--orange);font-size:11px;">※ テスト中は「テストデプロイ」(Dev URL) を使用してください</span>
-          </div>
+          <div class="gas-step-title" id="t-gas-step3-title">웹 앱으로 배포</div>
+          <div class="gas-step-desc" id="t-gas-step3-desc">「배포」→「새 배포」→ 유형:「웹 앱」<br>액세스 권한:「전체」→ 배포 → <strong>URL 복사</strong><br><span style="color:var(--orange);font-size:11px;">※ 테스트 중에는 「테스트 배포」(Dev URL)를 사용해 주세요</span></div>
         </div>
       </div>
       <div class="gas-step">
         <div class="gas-num">4</div>
         <div>
-          <div class="gas-step-title">WebアプリのURLを入力</div>
+          <div class="gas-step-title" id="t-gas-step4-title">웹 앱 URL 입력</div>
           <input class="gas-url-input" id="gasUrlInput" placeholder="https://script.google.com/macros/s/...../dev">
         </div>
       </div>
       <div id="gas-actions" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:14px;">
-        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;">データ同期</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-primary btn-sm" onclick="exportAllToGas()">
-            ⬆️ ローカル → Google（全データ書き出し）
+        <div id="t-gas-sync-title" style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;">데이터 동기화</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <button class="gas-sync-card gas-sync-upload" onclick="exportAllToGas()">
+            <div class="gas-sync-icons">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+            </div>
+            <div class="gas-sync-label" id="t-gas-upload-label">로컬 → Google</div>
+            <div class="gas-sync-sub" id="t-gas-upload-desc">현재 데이터를 Google에 저장</div>
           </button>
-          <button class="btn btn-sm" onclick="importAllFromGas()">
-            ⬇️ Google → ローカル（全データ読み込み）
+          <button class="gas-sync-card gas-sync-download" onclick="importAllFromGas()">
+            <div class="gas-sync-icons">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </div>
+            <div class="gas-sync-label" id="t-gas-download-label">Google → 로컬</div>
+            <div class="gas-sync-sub" id="t-gas-download-desc">⚠️ 로컬 데이터가 덮어써집니다</div>
           </button>
         </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:6px;">
-          ※ 初回は「ローカル → Google」で既存データをアップロードしてください
-        </div>
+        <div id="t-gas-sync-note" style="font-size:11px;color:var(--text3);margin-top:8px;"></div>
         <div id="gas-sync-status" style="margin-top:8px;font-size:12px;"></div>
       </div>
     </div>
     <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid var(--border);background:var(--surface);">
-      <button class="btn btn-sm" onclick="testGasConnection()" id="t-gas-test">🔌 接続テスト</button>
-      <button class="btn btn-primary" onclick="saveGasUrl()" id="t-gas-save">保存して連携</button>
+      <button class="btn btn-sm" onclick="testGasConnection()" id="t-gas-test">🔌 접속 테스트</button>
+      <button class="btn btn-primary" onclick="saveGasUrl()" id="t-gas-save">저장하고 연동</button>
     </div>
   </div>
 </div>

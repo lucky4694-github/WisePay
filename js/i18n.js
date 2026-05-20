@@ -3,6 +3,10 @@ function setTxt(id, jp, kr) {
   const el = document.getElementById(id);
   if (el) el.textContent = LANG === 'JP' ? jp : kr;
 }
+function setHtml(id, jp, kr) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = LANG === 'JP' ? jp : kr;
+}
 
 function toggleLang() {
   LANG = LANG === 'JP' ? 'KR' : 'JP';
@@ -68,6 +72,27 @@ function applyLang() {
   setTxt('t-gas-cancel', 'キャンセル', '취소');
   setTxt('t-gas-test', '🔌 接続テスト', '🔌 접속 테스트');
   setTxt('t-gas-save', '保存して連携', '저장하고 연동');
+
+  setTxt('t-gas-page-title', 'Google連携設定', 'Google 연동 설정');
+  setTxt('t-gas-desc', 'Google Apps Script を使って給与データをスプレッドシートに自動保存・同期できます。', 'Google Apps Script를 사용해 급여 데이터를 스프레드시트에 자동 저장·동기화할 수 있습니다.');
+  setTxt('t-gas-step1-title', 'Google スプレッドシートを新規作成', 'Google 스프레드시트 새로 만들기');
+  setTxt('t-gas-step1-desc', '「WisePay」という名前でスプレッドシートを作成してください。', '「WisePay」라는 이름으로 스프레드시트를 만들어 주세요.');
+  setTxt('t-gas-step2-title', '拡張機能 → Apps Script を開く', '확장 프로그램 → Apps Script 열기');
+  setTxt('t-gas-step2-desc', 'メニュー「拡張機能」→「Apps Script」→ code.gs に以下のコードを貼り付けてください。', '메뉴 「확장 프로그램」→「Apps Script」→ code.gs에 아래 코드를 붙여 넣으세요.');
+  setTxt('t-gas-code-comment', '// ↓ このコードを code.gs にそのまま貼り付けてください', '// ↓ 이 코드를 code.gs에 그대로 붙여 넣으세요');
+  setTxt('t-gas-copy-btn', '📋 コードをコピー', '📋 코드 복사');
+  setTxt('t-gas-step3-title', 'ウェブアプリとしてデプロイ', '웹 앱으로 배포');
+  setHtml('t-gas-step3-desc',
+    '「デプロイ」→「新しいデプロイ」→ 種類:「ウェブアプリ」<br>アクセス権限:「全員」→ デプロイ → <strong>URLをコピー</strong><br><span style="color:var(--orange);font-size:11px;">※ テスト中は「テストデプロイ」(Dev URL) を使用してください</span>',
+    '「배포」→「새 배포」→ 유형:「웹 앱」<br>액세스 권한:「전체」→ 배포 → <strong>URL 복사</strong><br><span style="color:var(--orange);font-size:11px;">※ 테스트 중에는 「테스트 배포」(Dev URL)를 사용해 주세요</span>'
+  );
+  setTxt('t-gas-step4-title', 'WebアプリのURLを入力', '웹 앱 URL 입력');
+  setTxt('t-gas-sync-title', 'データ同期', '데이터 동기화');
+  setTxt('t-gas-upload-label', 'ローカル → Google', '로컬 → Google');
+  setTxt('t-gas-upload-desc', '現在のデータをGoogleに保存', '현재 데이터를 Google에 저장');
+  setTxt('t-gas-download-label', 'Google → ローカル', 'Google → 로컬');
+  setTxt('t-gas-download-desc', '⚠️ ローカルデータが上書きされます', '⚠️ 로컬 데이터가 덮어써집니다');
+  setTxt('t-gas-sync-note', '※ 初回は「ローカル → Google」で既存データをアップロードしてください', '※ 초회는 「로컬 → Google」로 기존 데이터를 업로드해 주세요');
 
   updateGasStatus();
 }

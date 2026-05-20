@@ -228,6 +228,14 @@ body{font-family:'Noto Sans JP','Noto Sans KR',sans-serif;background:var(--bg);c
 .gas-code{background:#1e1e2e;border-radius:var(--r2);padding:11px;margin-top:7px;font-family:monospace;font-size:10.5px;color:#cdd6f4;overflow-x:auto;white-space:pre;max-height:200px;overflow-y:auto;}
 .gas-url-input{width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:var(--r2);font-size:12px;font-family:monospace;margin-top:6px;background:var(--surface2);color:var(--text);}
 .gas-url-input:focus{outline:none;border-color:var(--accent);}
+.gas-sync-card{display:flex;flex-direction:column;align-items:center;padding:14px 10px;border-radius:var(--r2);border:2px solid transparent;cursor:pointer;transition:background .15s,border-color .15s;background:none;font-family:inherit;text-align:center;}
+.gas-sync-upload{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;}
+.gas-sync-upload:hover{background:#dbeafe;border-color:#93c5fd;}
+.gas-sync-download{background:#fff7ed;border-color:#fed7aa;color:#9a3412;}
+.gas-sync-download:hover{background:#ffedd5;border-color:#fdba74;}
+.gas-sync-icons{display:flex;align-items:center;gap:5px;margin-bottom:7px;}
+.gas-sync-label{font-size:12px;font-weight:700;}
+.gas-sync-sub{font-size:10px;margin-top:3px;opacity:.8;}
 
 /* Rate modal rows */
 .rate-row{display:flex;align-items:center;justify-content:space-between;padding:8px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:7px;}

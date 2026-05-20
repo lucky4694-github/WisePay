@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "$repo = 'C:\\Users\\lucky\\Documents\\WisePay\\WisePay'; $status = git -C $repo status --porcelain; if ($status) { git -C $repo add -A; $msg = '자동 저장: ' + (Get-Date -Format 'yyyy-MM-dd HH:mm'); git -C $repo commit -m $msg; git -C $repo push }",
+            "timeout": 60,
+            "statusMessage": "변경사항 저장 중..."
+          }
+        ]
+      }
+    ]
+  }
+}
