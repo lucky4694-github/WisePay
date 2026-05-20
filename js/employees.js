@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-20 12:32 — 사원 저장 시 Google 자동 동기화 (Content-Type 수정, 전체 배열 전송)
+﻿// 수정: 2026-05-20 12:32 — Google 자동 동기화 추가 / const jp 중복 선언 버그 수정
 'use strict';
 function renderEmpList() {
   const body=document.getElementById('empListBody');
@@ -674,7 +674,6 @@ function saveEmployee() {
   // 상단 버튼도 저장→편집 모드로 갱신
   const btns = document.getElementById('empFormBtns');
   if(btns) btns.innerHTML = `<button class="btn btn-primary btn-sm" onclick="saveEmployee()">${LANG==='JP'?'保存':'저장'}</button><button class="btn btn-danger btn-sm" onclick="deleteEmp(${editingEmpIdx})">${LANG==='JP'?'削除':'삭제'}</button><button class="btn btn-sm" onclick="cancelEmpForm()">${LANG==='JP'?'キャンセル':'취소'}</button>`;
-  const jp=LANG==='JP';
   showToast(gasUrl
     ? (jp?'保存 & Google同期 ✓':'저장 & Google 동기화 ✓')
     : (jp?'従業員情報を保存しました ✓':'직원 정보를 저장했습니다 ✓'), 's');
