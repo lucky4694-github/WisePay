@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-21 13:19 — WW_LOGO.jpg로 교체 + 서브텍스트 원복
+﻿// 수정: 2026-05-21 13:27 — toggleLang에 renderAnnual/renderHistory 추가 (언어 전환 미반영 버그)
 'use strict';
 function setTxt(id, jp, kr) {
   const el = document.getElementById(id);
@@ -18,6 +18,8 @@ function toggleLang() {
   renderEmpSelect();
   renderEmpList();
   renderRatesPage();
+  renderAnnual();
+  renderHistory();
   updateGasStatus();
   recalc();
 

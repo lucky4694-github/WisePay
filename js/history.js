@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-21 12:03 — localStorage 키 사원번호 4자리 패딩 통일 (연간 일람 / 이력 표시 버그 수정)
+﻿// 수정: 2026-05-21 13:27 — renderHistory null 가드 추가 (toggleLang 호출 시 크래시 방지)
 'use strict';
 function buildAnnualEmpSel() {
   const sel = document.getElementById('annualEmpSel');
@@ -145,6 +145,7 @@ function buildHistEmpSel() {
 
 function renderHistory() {
   const tbody=document.getElementById('historyBody');
+  if(!tbody) return;
   const year=parseInt(document.getElementById('histYearSel').value);
   const empSel=document.getElementById('histEmpSel').value;
   tbody.innerHTML='';
