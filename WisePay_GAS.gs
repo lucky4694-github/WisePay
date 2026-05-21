@@ -216,31 +216,51 @@ function extractRatesFromHtml(html) {
   return extractRatesFromText(text);
 }
 
+function extractNumbers(text) {
+  return (text.match(/\d{1,2}\.\d{1,3}(?:%|％)?/g) || [])
+    .map(s => Number(s.replace(/[％%]/g, '')))
+    .filter(v => !Number.isNaN(v));
+}
+
+function findNumberNearKeyword(text, keywordPattern, min, max, windowSize = 300) {
+  const re = new RegExp(keywordPattern, 'gi');
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const start = Math.max(0, m.index - 120);
+    const segment = text.slice(start, m.index + windowSize);
+    const nums = extractNumbers(segment).filter(v => v >= min && v <= max);
+    if (nums.length) return nums[0];
+  }
+  return null;
+}
+
 function extractRatesFromText(text) {
   if (!text) return { kenko: null, kaigo: null };
 
-  let kenko = null, kaigo = null;
+  const normalized = text.replace(/[　\s]+/g, ' ').replace(/\s+/g, ' ').trim();
+  let kenko = null;
+  let kaigo = null;
 
-  // 東京都 直後の数値列から合計保険料率 (8.5〜11.5%)
-  const tokyoIdx = text.indexOf('東京都');
-  Logger.log('東京都 idx=' + tokyoIdx);
-  if (tokyoIdx >= 0) {
-    const seg  = text.slice(tokyoIdx, tokyoIdx + 600);
-    Logger.log('東京都付近300文字: ' + seg.substring(0, 300));
-    const nums = (seg.match(/\d{1,2}\.\d{2,3}/g) || []).map(Number);
-    Logger.log('数値リスト: ' + JSON.stringify(nums));
-    kenko = nums.find(v => v >= 8.5 && v <= 11.5) || null;
-    Logger.log('健康保険料率(東京): ' + kenko);
+  // まずは「東京都」「東京」周辺を探す
+  kenko = findNumberNearKeyword(normalized, '東京都|東京', 8.0, 12.0, 400);
+  if (kenko == null) {
+    kenko = findNumberNearKeyword(normalized, '健康保険料率|健康保険料|協会けんぽ', 8.0, 12.0, 400);
   }
+  if (kenko == null) {
+    kenko = extractNumbers(normalized).find(v => v >= 8.0 && v <= 12.0) || null;
+  }
+  Logger.log('健康保険料率(東京)候補: ' + kenko);
 
-  // 介護保険料率 (全国一律 1〜3%)
-  const kaigoIdx = text.search(/介護保険料率|介護保険.*?料率/);
-  if (kaigoIdx >= 0) {
-    const seg  = text.slice(kaigoIdx, kaigoIdx + 300);
-    const nums = (seg.match(/\d+\.\d{2,3}/g) || []).map(Number);
-    kaigo = nums.find(v => v >= 1.0 && v <= 3.0) || null;
-    Logger.log('介護保険料率: ' + kaigo);
+  // 介護保険料率を探す
+  const kaigoPatterns = ['介護保険料率', '介護保険.*?料率', '介護保険料', '介護保険'];
+  for (const pattern of kaigoPatterns) {
+    kaigo = findNumberNearKeyword(normalized, pattern, 1.0, 3.5, 400);
+    if (kaigo != null) break;
   }
+  if (kaigo == null) {
+    kaigo = extractNumbers(normalized).find(v => v >= 1.0 && v <= 3.5) || null;
+  }
+  Logger.log('介護保険料率候補: ' + kaigo);
 
   return { kenko, kaigo };
 }
@@ -252,19 +272,27 @@ function findYearPageUrl(html, year, fiscal) {
   const reiwaStr = '令和' + fiscal;
   const candidates = [];
 
-  const re = /href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  const re = /<a\s+[^>]*href=["']([^"'#]+)["'][^>]*>([\s\S]*?)<\/a>/gi;
   let m;
   while ((m = re.exec(html)) !== null) {
     const href = m[1].trim();
     const text = m[2].replace(/<[^>]+>/g, '').trim();
-    if (text.includes(yearStr) || text.includes(reiwaStr) ||
-        href.includes(yearStr) || href.includes('r' + String(fiscal).padStart(2,'0'))) {
-      candidates.push({ href, text });
+    let score = 0;
+
+    if (text.includes(yearStr) || href.includes(yearStr) || text.includes(reiwaStr) || href.includes('r' + String(fiscal).padStart(2,'0'))) score += 30;
+    if (text.includes('令和') || text.includes('年度') || href.includes('reiwa') || href.includes('年度')) score += 8;
+    if (/保険料|料率/.test(text) || /保険料|料率/.test(href)) score += 5;
+    if (/東京|東京都/.test(text) || /東京|東京都/.test(href)) score += 3;
+    if (href.toLowerCase().endsWith('.pdf')) score += 2;
+
+    if (score > 0) {
+      candidates.push({ href, text, score });
     }
   }
   Logger.log('年度リンク候補: ' + JSON.stringify(candidates.slice(0, 8)));
 
   if (candidates.length === 0) return null;
+  candidates.sort((a,b) => b.score - a.score);
   const href = candidates[0].href;
   if (href.startsWith('http')) return href;
   return KENPO_BASE_URL + (href.startsWith('/') ? href : '/' + href);
