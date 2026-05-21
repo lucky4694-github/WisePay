@@ -46,6 +46,12 @@ function calcMonthData(emp, year, month) {
 }
 
 function renderAnnual() {
+  const jp = LANG==='JP';
+  if (!employees.length) {
+    document.getElementById('annualContent').innerHTML =
+      `<div style="padding:40px;text-align:center;color:var(--text3);">${jp?'従業員データがありません。まずGoogle同期を行ってください。':'직원 데이터가 없습니다. Google 동기화를 먼저 해주세요.'}</div>`;
+    return;
+  }
   const empIdx = parseInt(document.getElementById('annualEmpSel')?.value);
   const year = parseInt(document.getElementById('annualYearSel')?.value)||2026;
   if(isNaN(empIdx)||!employees[empIdx]) return;

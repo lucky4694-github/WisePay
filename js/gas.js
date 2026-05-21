@@ -355,6 +355,10 @@ async function autoLoadFromGas() {
     renderEmpSelect();
     loadPayrollForm();
     applyRatesForYM(currentYear, currentMonth);
+    buildAnnualEmpSel();
+    renderAnnual();
+    buildHistEmpSel();
+    renderHistory();
     updateGasStatus();
     showToast(LANG === 'JP' ? 'Google同期完了 ✓' : 'Google 동기화 완료 ✓', 's');
   } catch (err) {
