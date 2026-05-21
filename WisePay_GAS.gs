@@ -117,9 +117,16 @@ function scrapeKenpoRates() {
     muteHttpExceptions: true,
     followRedirects: true,
     headers: {
-      'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      'Accept-Language': 'ja,en-US;q=0.7',
-      'Accept':          'text/html,application/xhtml+xml,*/*;q=0.8',
+      'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+      'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Language': 'ja-JP,ja;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Cache-Control':   'no-cache',
+      'Pragma':          'no-cache',
+      'Sec-Fetch-Dest':  'document',
+      'Sec-Fetch-Mode':  'navigate',
+      'Sec-Fetch-Site':  'none',
+      'Upgrade-Insecure-Requests': '1',
     }
   };
 
@@ -318,13 +325,26 @@ function extractRatesFromPdf(pdfUrl, opts) {
 
 function kenpoFetch(url, opts) {
   try {
-    const res = UrlFetchApp.fetch(url, opts);
+    const res  = UrlFetchApp.fetch(url, opts);
     const code = res.getResponseCode();
     Logger.log('HTTP ' + code + ' : ' + url);
-    if (code !== 200) return null;
+
+    if (code !== 200) {
+      // 非200: レスポンスヘッダーと本文冒頭をログに出力してデバッグ支援
+      try {
+        const headers = res.getHeaders();
+        Logger.log('レスポンスヘッダー: ' + JSON.stringify(headers));
+      } catch(he) {}
+      try {
+        const body = res.getContentText('UTF-8');
+        Logger.log('レスポンス本文先頭500: ' + body.substring(0, 500));
+      } catch(be) {}
+      return null;
+    }
+
     return res.getContentText('UTF-8');
   } catch(e) {
-    Logger.log('Fetch失敗: ' + url + ' → ' + e.message);
+    Logger.log('Fetch例外: ' + url + ' → ' + e.message);
     return null;
   }
 }
