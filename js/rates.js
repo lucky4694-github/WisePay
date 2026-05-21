@@ -47,7 +47,7 @@ async function openRateModal() {
       <div class="rate-row" style="background:var(--surface2);border-radius:var(--r2);margin-bottom:6px;">
         <span style="font-size:12px;">${jp ? d.jp : d.kr}</span>
         <div class="rate-row-r" style="gap:4px;">
-          <span style="font-size:15px;font-weight:600;color:var(--accent);">${result[d.key].toFixed(2)}</span>
+          <span style="font-size:15px;font-weight:600;color:var(--accent);">${result[d.key] != null ? Number(result[d.key]).toFixed(2) : '—'}</span>
           <span style="font-size:12px;color:var(--text3);">%</span>
         </div>
       </div>`).join('');
@@ -129,7 +129,7 @@ function renderRateHistoryRows() {
     tr.style.background = isCurrent ? 'var(--accent2)' : '';
     tr.innerHTML = `
       <td style="padding:6px 10px;border-bottom:1px solid var(--border2);">
-        <span style="font-size:12px;font-weight:500;">${r.from}</span>
+        <span style="font-size:12px;font-weight:500;">${fmtYM(r.from)}</span>
         ${isCurrent?`<div style="margin-top:3px;"><span style="font-size:10px;background:var(--accent);color:white;border-radius:20px;padding:1px 6px;">${jp?'適用中':'적용 중'}</span></div>`:''}
       </td>
       ${keys.map(k=>`<td style="padding:6px 4px;border-bottom:1px solid var(--border2);text-align:right;">

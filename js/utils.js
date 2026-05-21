@@ -28,3 +28,27 @@ function showToast(msg, type = '') {
 function fmt(n) {
   return Math.round(n).toLocaleString('ja-JP');
 }
+
+// Google Sheets가 "2026-04"를 날짜로 변환해 ISO 문자열로 돌려줄 때 정규화
+function normalizeYM(val) {
+  if (!val) return '';
+  const s = String(val).trim();
+  if (/^\d{4}-\d{2}$/.test(s)) return s;
+  try {
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+      return `${y}-${m}`;
+    }
+  } catch(e) {}
+  const match = s.match(/^(\d{4})-(\d{2})/);
+  return match ? `${match[1]}-${match[2]}` : s;
+}
+
+function fmtYM(ym) {
+  const norm = normalizeYM(ym);
+  if (!norm) return ym || '';
+  const [y, m] = norm.split('-');
+  return LANG === 'JP' ? `${y}年${parseInt(m)}月` : `${y}년 ${parseInt(m)}월`;
+}

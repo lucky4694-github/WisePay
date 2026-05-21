@@ -262,7 +262,7 @@ async function importAllFromGas() {
     }
     if(d.rateHistory&&d.rateHistory.length>0){
       rateHistory=d.rateHistory.map(r=>({
-        from:r.from,
+        from:normalizeYM(r.from),
         kenko:parseFloat(r.kenko)||9.85,
         kaigo:parseFloat(r.kaigo)||1.62,
         kodomo:parseFloat(r.kodomo)||0,
@@ -342,7 +342,7 @@ async function autoLoadFromGas() {
     }
     if (d.rateHistory && d.rateHistory.length > 0) {
       rateHistory = d.rateHistory.map(r => ({
-        from: r.from,
+        from: normalizeYM(r.from),
         kenko: parseFloat(r.kenko) || 9.85,
         kaigo: parseFloat(r.kaigo) || 1.62,
         kodomo: parseFloat(r.kodomo) || 0,
