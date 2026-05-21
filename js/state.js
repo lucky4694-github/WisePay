@@ -5,7 +5,8 @@ let currentMonth = new Date().getMonth() + 1;
 let currentEmpIdx = -1; // -1 = 미선택
 let editingEmpIdx = -1;
 let tempFamilies = [];
-let gasUrl = '';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbymciJAVPgcCA34OK3qr2sSXrPfpkrFSSTXnjqR6AGgHp9ZdZ0TOX8WIaxw2bs7NqL-sw/exec';
+let gasUrl = GAS_URL;
 let rates = { kenko:9.85, kaigo:1.62, kodomo:0.23, nenkin:18.30, koyo:0.50 };
 // 월별 요율 이력 [{from:'2026-01', kenko:9.91, kaigo:1.60, ...}, ...]
 // from: 'YYYY-MM' 형식, 해당 월부터 적용

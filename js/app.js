@@ -1,7 +1,14 @@
-﻿// 수정: 2026-05-21 10:44 — 요율 이력 빈 날짜 항목 및 중복 항목 시작 시 자동 정리
+﻿// 수정: 2026-05-21 — 로그인 기능 추가, GAS URL 하드코딩, 로그인 시 자동 GAS 동기화
 'use strict';
 // ══ INIT ══
 window.addEventListener('DOMContentLoaded', () => {
+  LANG = localStorage.getItem(LS.lang) || 'KR';
+  applyLang();
+  if (!checkAuth()) return;
+  initApp();
+});
+
+function initApp() {
   // load storage
   try { const s = localStorage.getItem(LS.emp); if(s) employees = JSON.parse(s); } catch(e){}
   try { const s = localStorage.getItem(LS.rateHistory); if(s) rateHistory = JSON.parse(s); } catch(e){}
@@ -37,8 +44,8 @@ window.addEventListener('DOMContentLoaded', () => {
   try { const s = localStorage.getItem(LS.rates); if(s) { const r=JSON.parse(s); rates={...rates,...r}; } } catch(e){}
   // 구버전 급여 키 마이그레이션: 비패딩 사원번호(kyuyo_p_1_...) → 4자리(kyuyo_p_0001_...)
   migratePayrollKeys();
-  gasUrl = localStorage.getItem(LS.gas) || '';
-  LANG = localStorage.getItem(LS.lang) || 'KR';
+  // GAS URL은 state.js에서 하드코딩 — localStorage에 동기화
+  localStorage.setItem(LS.gas, gasUrl);
   document.getElementById('gasUrlInput').value = gasUrl;
 
   // 급여 입력란: 포커스 이탈 시 빈 값 → "0" 복원
@@ -48,17 +55,17 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  applyLang();
   renderEmpSelect();
   renderMonthTabs();
-  applyRatesForYM(currentYear, currentMonth); // 현재 월 요율 자동 적용
+  applyRatesForYM(currentYear, currentMonth);
   loadPayrollForm();
   updateRatesDisplay();
   checkRateBanner();
   updateGasStatus();
-  // 초기 월 알림 체크
   setTimeout(() => onMonthYearChange(), 100);
-});
+  // 로그인 후 Google 시트에서 최신 데이터 자동 로드
+  autoLoadFromGas();
+}
 
 // 페이지 닫기/새로고침 시 미저장 경고
 window.addEventListener('beforeunload', e => {

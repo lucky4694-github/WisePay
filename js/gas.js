@@ -320,6 +320,48 @@ function updateGasUrlBadge() {
   }
 }
 
+// 로그인 후 GAS에서 조용히 최신 데이터 가져오기 (confirm 없음)
+async function autoLoadFromGas() {
+  if (!gasUrl) return;
+  try {
+    const result = await gasRequest({ action: 'getAll' });
+    const d = result.data || result;
+    if (d.employees && d.employees.length > 0) {
+      employees = d.employees.map(e => ({
+        ...e,
+        families: typeof e.families === 'string' ? JSON.parse(e.families || '[]') : (e.families || []),
+        fuyouCount: parseInt(e.fuyouCount) || 0,
+        commute: parseInt(e.commute) || 0
+      }));
+      localStorage.setItem(LS.emp, JSON.stringify(employees));
+    }
+    if (d.payrolls && d.payrolls.length > 0) {
+      d.payrolls.forEach(p =>
+        localStorage.setItem('kyuyo_p_' + p.no + '_' + p.year + '_' + p.month, JSON.stringify(p))
+      );
+    }
+    if (d.rateHistory && d.rateHistory.length > 0) {
+      rateHistory = d.rateHistory.map(r => ({
+        from: r.from,
+        kenko: parseFloat(r.kenko) || 9.85,
+        kaigo: parseFloat(r.kaigo) || 1.62,
+        kodomo: parseFloat(r.kodomo) || 0,
+        nenkin: parseFloat(r.nenkin) || 18.30,
+        koyo: parseFloat(r.koyo) || 0.50
+      }));
+      saveRateHistory();
+    }
+    if (employees.length > 0 && currentEmpIdx < 0) currentEmpIdx = 0;
+    renderEmpSelect();
+    loadPayrollForm();
+    applyRatesForYM(currentYear, currentMonth);
+    updateGasStatus();
+    showToast(LANG === 'JP' ? 'Google同期完了 ✓' : 'Google 동기화 완료 ✓', 's');
+  } catch (err) {
+    console.warn('GAS auto-load failed:', err);
+  }
+}
+
 // GAS 코드 클립보드 복사
 function copyGasCode() {
   const text = document.getElementById('gasCodePreview')?.textContent || GAS_CODE;
