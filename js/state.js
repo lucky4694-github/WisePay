@@ -5,7 +5,7 @@ let currentMonth = new Date().getMonth() + 1;
 let currentEmpIdx = -1; // -1 = 미선택
 let editingEmpIdx = -1;
 let tempFamilies = [];
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbymciJAVPgcCA34OK3qr2sSXrPfpkrFSSTXnjqR6AGgHp9ZdZ0TOX8WIaxw2bs7NqL-sw/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxLITKAJgf0TgOgOCRq4FrylyR_S8DRJ7ll6QKfT_Ojw46d6-iVGeRph3NZGiwC3c8mMg/exec';
 let gasUrl = GAS_URL;
 let rates = { kenko:9.85, kaigo:1.62, kodomo:0.23, nenkin:18.30, koyo:0.50 };
 // 월별 요율 이력 [{from:'2026-01', kenko:9.91, kaigo:1.60, ...}, ...]
