@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-20 18:30 — 구버전 급여 키(비패딩 사원번호) → 4자리 키로 자동 마이그레이션
+﻿// 수정: 2026-05-21 10:44 — 요율 이력 빈 날짜 항목 및 중복 항목 시작 시 자동 정리
 'use strict';
 // ══ INIT ══
 window.addEventListener('DOMContentLoaded', () => {
@@ -21,6 +21,17 @@ window.addEventListener('DOMContentLoaded', () => {
       migrated = true;
     }
   }
+  // 요율 이력 정리: 빈 from 항목 제거 + 같은 from 중복 제거 (마지막 항목 우선)
+  const beforeClean = rateHistory.length;
+  const deduped = [];
+  const seenFrom = new Set();
+  [...rateHistory].sort((a,b)=>a.from>b.from?1:-1).reverse().forEach(r => {
+    if(!r.from || !/^\d{4}-\d{2}$/.test(r.from)) return;
+    if(seenFrom.has(r.from)) return;
+    seenFrom.add(r.from);
+    deduped.unshift(r);
+  });
+  if(deduped.length !== beforeClean) { rateHistory = deduped; migrated = true; }
   if(migrated) localStorage.setItem(LS.rateHistory, JSON.stringify(rateHistory));
   // 구버전 단일 rates 호환
   try { const s = localStorage.getItem(LS.rates); if(s) { const r=JSON.parse(s); rates={...rates,...r}; } } catch(e){}

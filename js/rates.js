@@ -1,4 +1,5 @@
-﻿'use strict';
+﻿// 수정: 2026-05-21 10:44 — 빈 날짜 요율 이력 항목 방지 (updateRateHistoryFrom 유효성 검사)
+'use strict';
 function openRateModal() {
   const jp = LANG==='JP';
   const curRates = getRatesForYM(currentYear, currentMonth);
@@ -133,6 +134,7 @@ function addRateHistoryRow() {
 }
 
 function updateRateHistoryFrom(idx, newFrom) {
+  if(!newFrom) { renderRateHistoryRows(); return; }
   if(rateHistory.find((r,i)=>i!==idx&&r.from===newFrom)) { showToast(LANG==='JP'?'その月は既に登録済みです':'이미 등록된 월입니다','w'); renderRateHistoryRows(); return; }
   rateHistory[idx].from = newFrom;
   rateHistory.sort((a,b)=>a.from>b.from?1:-1);

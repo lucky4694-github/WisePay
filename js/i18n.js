@@ -1,4 +1,5 @@
-﻿'use strict';
+﻿// 수정: 2026-05-21 10:44 — 보험료율 설정 페이지 한국어 미적용 버그 수정
+'use strict';
 function setTxt(id, jp, kr) {
   const el = document.getElementById(id);
   if (el) el.textContent = LANG === 'JP' ? jp : kr;
@@ -16,6 +17,7 @@ function toggleLang() {
   renderMonthTabs();
   renderEmpSelect();
   renderEmpList();
+  renderRatesPage();
   updateGasStatus();
   recalc();
 
@@ -93,6 +95,12 @@ function applyLang() {
   setTxt('t-gas-download-label', 'Google → ローカル', 'Google → 로컬');
   setTxt('t-gas-download-desc', '⚠️ ローカルデータが上書きされます', '⚠️ 로컬 데이터가 덮어써집니다');
   setTxt('t-gas-sync-note', '※ 初回は「ローカル → Google」で既存データをアップロードしてください', '※ 초회는 「로컬 → Google」로 기존 데이터를 업로드해 주세요');
+
+  setTxt('t-rates-page-title', '保険料率設定', '보험료율 설정');
+  setTxt('t-rates-desc', '協会けんぽ東京都・2026年度の料率。改定時に更新してください。', '협회けんぽ 도쿄도・2026년도 요율. 개정 시 업데이트해 주세요.');
+  setTxt('t-rates-current', '現在の適用料率', '현재 적용 요율');
+  setTxt('t-rates-ai', 'AIで最新料率を確認', 'AI로 최신 요율 확인');
+  setTxt('t-rates-save', '料率を保存', '요율 저장');
 
   updateGasStatus();
 }
