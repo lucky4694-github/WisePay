@@ -24,6 +24,7 @@ async function openRateModal() {
 
   try {
     const result = await gasRequest({ action: 'scrapeRates' }, 30000);
+    console.log('[WisePay] GAS scrapeRates raw response:', JSON.stringify(result));
     if (!result.ok) throw new Error(result.error || (jp ? '取得失敗' : '가져오기 실패'));
 
     _pendingScrapedRates = result;
