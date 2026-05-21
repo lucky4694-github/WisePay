@@ -3,7 +3,11 @@ const AUTH_KEY = 'wisepay_auth';
 const AUTH_PW = '1111';
 
 function checkAuth() {
-  if (localStorage.getItem(AUTH_KEY) === '1') return true;
+  if (localStorage.getItem(AUTH_KEY) === '1') {
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('layout').style.display = '';
+    return true;
+  }
   _showLogin();
   return false;
 }
