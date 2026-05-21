@@ -9,7 +9,8 @@
       "Bash(git push *)",
       "Bash(git commit -m '배지 위치를 ④ 웹 앱 URL 입력 제목 옆으로 이동 *)",
       "Bash(gh auth *)",
-      "PowerShell(gh auth *)"
+      "PowerShell(gh auth *)",
+      "Bash(git commit *)"
     ]
   }
 }
