@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-21 — 로그인 기능 추가, GAS URL 하드코딩, 로그인 시 자동 GAS 동기화
+﻿// 수정: 2026-05-22 13:10 — resetLocalData 후 renderRatesPage 등 누락 렌더 추가
 'use strict';
 // ══ INIT ══
 window.addEventListener('DOMContentLoaded', () => {
@@ -132,11 +132,15 @@ function resetLocalData() {
   ];
   currentEmpIdx = -1;
 
+  saveRateHistory();
   renderEmpSelect();
+  renderEmpList();
   renderMonthTabs();
   applyRatesForYM(currentYear, currentMonth);
   loadPayrollForm();
   updateRatesDisplay();
+  renderRatesPage();
+  checkRateBanner();
 
   showToast(jp ? 'ローカルデータを初期化しました' : '로컬 데이터를 초기화했습니다', 's');
 }

@@ -1,3 +1,4 @@
+// 수정: 2026-05-22 13:10 — importAllFromGas/autoLoadFromGas 급여키 패딩 수정 + 누락 렌더 추가
 'use strict';
 async function exportAllToGas() {
   if (!gasUrl) {
@@ -258,7 +259,10 @@ async function importAllFromGas() {
       localStorage.setItem(LS.emp,JSON.stringify(employees));
     }
     if(d.payrolls&&d.payrolls.length>0){
-      d.payrolls.forEach(p=>localStorage.setItem('kyuyo_p_'+p.no+'_'+p.year+'_'+p.month, JSON.stringify(p)));
+      d.payrolls.forEach(p=>{
+        const pNo = String(p.no).padStart(4,'0');
+        localStorage.setItem('kyuyo_p_'+pNo+'_'+p.year+'_'+p.month, JSON.stringify(p));
+      });
     }
     if(d.rateHistory&&d.rateHistory.length>0){
       rateHistory=d.rateHistory.map(r=>({
@@ -274,7 +278,9 @@ async function importAllFromGas() {
     const msg=jp?'✅ 完了！従業員'+(d.employees||[]).length+'名、給与'+(d.payrolls||[]).length+'件':'✅ 완료! 직원 '+(d.employees||[]).length+'명, 급여 '+(d.payrolls||[]).length+'건';
     if(statusEl) statusEl.innerHTML='<span style="color:var(--green)">'+msg+'</span>';
     if(employees.length > 0 && currentEmpIdx < 0) currentEmpIdx = 0;
-    renderEmpSelect(); loadPayrollForm(); applyRatesForYM(currentYear,currentMonth);
+    renderEmpSelect(); renderEmpList(); loadPayrollForm();
+    applyRatesForYM(currentYear,currentMonth); updateRatesDisplay(); renderRatesPage();
+    buildHistEmpSel(); renderHistory(); buildAnnualEmpSel(); renderAnnual(); checkRateBanner();
     showToast(jp?'ダウンロード完了 ✓':'가져오기 완료 ✓','s');
   } catch(err){
     if(statusEl) statusEl.innerHTML='<span style="color:var(--red)">❌ '+err.message+'</span>';
@@ -336,9 +342,10 @@ async function autoLoadFromGas() {
       localStorage.setItem(LS.emp, JSON.stringify(employees));
     }
     if (d.payrolls && d.payrolls.length > 0) {
-      d.payrolls.forEach(p =>
-        localStorage.setItem('kyuyo_p_' + p.no + '_' + p.year + '_' + p.month, JSON.stringify(p))
-      );
+      d.payrolls.forEach(p => {
+        const pNo = String(p.no).padStart(4, '0');
+        localStorage.setItem('kyuyo_p_' + pNo + '_' + p.year + '_' + p.month, JSON.stringify(p));
+      });
     }
     if (d.rateHistory && d.rateHistory.length > 0) {
       rateHistory = d.rateHistory.map(r => ({
