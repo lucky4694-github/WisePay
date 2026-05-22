@@ -17,7 +17,9 @@
       "Bash(Get-Content \"C:\\\\Users\\\\lucky\\\\Documents\\\\WisePay\\\\WisePay\\\\js\\\\payroll.js\" -TotalCount 1)",
       "Bash(Get-Content \"C:\\\\Users\\\\lucky\\\\Documents\\\\WisePay\\\\WisePay\\\\js\\\\gas.js\" -TotalCount 1)",
       "PowerShell(Get-Content *)",
-      "WebSearch"
+      "WebSearch",
+      "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\('C:\\\\Users\\\\lucky\\\\Desktop\\\\JKS-payroll_books_2026_20260522231112.csv'\\); $text = [System.Text.Encoding]::GetEncoding\\('shift_jis'\\).GetString\\($bytes\\); \\($text -split \"`r?`n\"\\)[1] -split ',' | Select-Object -First 5)",
+      "PowerShell($enc = [System.Text.Encoding]::GetEncoding\\('shift_jis'\\); $lines = Get-Content 'C:\\\\Users\\\\lucky\\\\Desktop\\\\JKS-payroll_books_2026_20260522231112.csv' -Encoding Default; $lines[1] -split ',' | Select-Object -First 5)"
     ]
   }
 }
