@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-22 — URL 수정 + fast path + 전각변환 + HTML 선두 1000자 로그 추가
+// 수정: 2026-05-22 — URL 수정 + 東京都 파싱 수정 (이후 텍스트만, 당년도 값 취득)
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -218,6 +218,7 @@ function extractRatesFromHtml(html) {
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&#\d+;/g, ' ')
+    .replace(/&[a-z]+;/gi, ' ')   // &darr; &rarr; &uarr; 等を除去
     .replace(/\s+/g, ' ');
 
   return extractRatesFromText(text);
@@ -256,16 +257,18 @@ function extractRatesFromText(text) {
   let kenko = null;
   let kaigo = null;
 
-  // 「東京都」周辺テキストをログ出力（デバッグ用）
+  // 「東京都」を見つけ、直後〜次の都道府県名の前までを切り出して当年度率（最後の値）を取得
   const tokyoIdx = normalized.indexOf('東京都');
   if (tokyoIdx >= 0) {
-    Logger.log('東京都周辺テキスト: [' + normalized.slice(Math.max(0, tokyoIdx - 50), tokyoIdx + 300) + ']');
-  } else {
-    Logger.log('東京都: テキスト内に見つからず');
+    const afterStart = tokyoIdx + 3; // '東京都' の3文字をスキップ
+    const nextPrefPos = normalized.slice(afterStart).search(/[一-鿿]+[都道府県]/);
+    const endPos = nextPrefPos > 0 ? afterStart + nextPrefPos : tokyoIdx + 150;
+    const segment = normalized.slice(tokyoIdx, endPos);
+    const nums = extractNumbers(segment).filter(v => v >= 8.0 && v <= 12.0);
+    Logger.log('東京都セグメント: [' + segment + '] 数値: ' + JSON.stringify(nums));
+    if (nums.length > 0) kenko = nums[nums.length - 1]; // 末尾が当年度率
   }
-
-  // まずは「東京都」「東京」周辺を探す
-  kenko = findNumberNearKeyword(normalized, '東京都|東京', 8.0, 12.0, 400);
+  // フォールバック
   if (kenko == null) {
     kenko = findNumberNearKeyword(normalized, '健康保険料率|健康保険料|協会けんぽ', 8.0, 12.0, 400);
   }
