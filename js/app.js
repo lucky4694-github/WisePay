@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-23 08:09 — 고용보험 2025年度 0.55% 마이그레이션 추가 (2025-04 항목 추가)
+﻿// 수정: 2026-05-23 08:21 — 2024-03/2025-03 요율 이력 마이그레이션 추가
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -37,9 +37,21 @@ function initApp() {
     if(r.from < '2026-03' && Math.abs(r.kaigo - 1.60) < 0.001) { r.kaigo = 1.59; migrated = true; }
     if(r.from < '2026-04' && Math.abs(r.koyo - 0.50) < 0.001) { r.koyo = 0.55; migrated = true; }
   });
-  // 2025-04 항목이 없으면 추가 (2025年度 고용보험 0.55% 적용)
-  if(!rateHistory.find(r => r.from <= '2025-12')) {
+  // 2025-03 항목 없으면 추가 (令和7年度 건강보험 개정, 고용보험 아직 0.60%)
+  if(!rateHistory.find(r => r.from === '2025-03')) {
+    rateHistory.push({ from:'2025-03', kenko:9.91, kaigo:1.59, kodomo:0.00, nenkin:18.30, koyo:0.60 });
+    rateHistory.sort((a,b) => a.from > b.from ? 1 : -1);
+    migrated = true;
+  }
+  // 2025-04 항목 없으면 추가 (令和7年度 고용보험 0.55% 개정)
+  if(!rateHistory.find(r => r.from === '2025-04')) {
     rateHistory.push({ from:'2025-04', kenko:9.91, kaigo:1.59, kodomo:0.00, nenkin:18.30, koyo:0.55 });
+    rateHistory.sort((a,b) => a.from > b.from ? 1 : -1);
+    migrated = true;
+  }
+  // 2024-03 항목 없으면 추가 (令和6年度: kenko:9.98, kaigo:1.60, koyo:0.60)
+  if(!rateHistory.find(r => r.from === '2024-03')) {
+    rateHistory.push({ from:'2024-03', kenko:9.98, kaigo:1.60, kodomo:0.00, nenkin:18.30, koyo:0.60 });
     rateHistory.sort((a,b) => a.from > b.from ? 1 : -1);
     migrated = true;
   }
