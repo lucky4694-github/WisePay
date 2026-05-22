@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-22 18:30 — renameRateSheet → migrateRateData 교체 (데이터 복사+삭제)
+// 수정: 2026-05-22 18:50 — importFreeeEmployees 추가 (freee CSV → 사원정보 upsert)
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -490,4 +490,76 @@ function migrateRateData() {
 
   ss.deleteSheet(src);
   Logger.log('삭제 완료: 보험요율데이터');
+}
+
+// ── freee 사원 CSV → 사원정보 시트 임포트 (한 번만 실행) ──────────
+// 사전 준비: CSV 파일을 Google Drive 루트에 업로드
+// 파일명: -freee=employee_exports_2026_5.csv
+function importFreeeEmployees() {
+  const FILE_NAME = '-freee=employee_exports_2026_5.csv';
+  const files = DriveApp.getFilesByName(FILE_NAME);
+  if (!files.hasNext()) {
+    Logger.log('파일을 찾을 수 없음: ' + FILE_NAME);
+    Logger.log('Google Drive 루트에 CSV 파일을 업로드한 후 재실행해 주세요.');
+    return;
+  }
+
+  const csv  = files.next().getBlob().getDataAsString('UTF-8');
+  const rows = Utilities.parseCsv(csv);
+  if (rows.length < 2) { Logger.log('데이터 없음'); return; }
+
+  const headers = rows[0];
+  const col = name => headers.indexOf(name);
+
+  // freee CSV 행 → WisePay 사원 객체
+  const freeeEmps = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r     = rows[i];
+    const noStr = (r[col('従業員番号')] || '').trim();
+    if (!noStr) continue;
+    // 퇴직자 스킵
+    if ((r[col('退職日')] || '').trim() !== '') continue;
+
+    const families = [];
+    for (let f = 1; f <= 8; f++) {
+      const sei   = (r[col('家族情報' + f + ' 姓')] || '').trim();
+      const mei   = (r[col('家族情報' + f + ' 名')] || '').trim();
+      const birth = (r[col('家族情報' + f + ' 生年月日')] || '').trim();
+      const name  = [sei, mei].filter(Boolean).join(' ');
+      if (name && birth) families.push({ name: name, birth: birth });
+    }
+
+    freeeEmps.push({
+      no:         parseInt(noStr, 10),
+      name:       [(r[col('姓')] || '').trim(), (r[col('名')] || '').trim()].filter(Boolean).join(' '),
+      kana:       [(r[col('姓カナ')] || '').trim(), (r[col('名カナ')] || '').trim()].filter(Boolean).join(' '),
+      join:        r[col('入社日')]    || '',
+      birth:       r[col('生年月日')] || '',
+      kaigo:       'auto',
+      koyo:       (r[col('雇用保険に加入しているか')] || '').indexOf('加入') !== -1 ? 'yes' : 'no',
+      shotokuKbn: (r[col('所得税納税者区分')]         || '').indexOf('甲')  !== -1 ? 'ko'  : 'otsu',
+      fuyouCount:  parseInt(r[col('扶養親族等の数')]) || 0,
+      base:        0,
+      commute:     parseInt((r[col('通勤手当の金額・単価')] || '0').toString().replace(/,/g, '')) || 0,
+      families:    JSON.stringify(families),
+    });
+  }
+
+  if (!freeeEmps.length) { Logger.log('변환된 사원 없음'); return; }
+
+  // 기존 사원정보를 no 기준으로 읽어 upsert (신규 추가 + 기존 갱신)
+  const existing = sheetToObjects(getSheet(SHEET_EMP));
+  const empMap   = {};
+  existing.forEach(function(e) { empMap[parseInt(e.no)] = e; });
+  freeeEmps.forEach(function(fe) {
+    if (empMap[fe.no]) {
+      Object.assign(empMap[fe.no], fe);
+    } else {
+      empMap[fe.no] = fe;
+    }
+  });
+
+  const merged = Object.values(empMap).sort(function(a, b) { return parseInt(a.no) - parseInt(b.no); });
+  saveSheet(SHEET_EMP, merged);
+  Logger.log('임포트 완료: ' + freeeEmps.length + '명 갱신, 합계 ' + merged.length + '명 → ' + SHEET_EMP);
 }
