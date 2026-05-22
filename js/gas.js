@@ -1,4 +1,4 @@
-// 수정: 2026-05-23 07:09 — freee CSV 支給月日 전월 변환 버그 수정, localStorage 즉시 갱신 추가
+// 수정: 2026-05-23 08:03 — freee CSV 인코딩 UTF-8 → Shift_JIS 수정 (이름 깨짐 수정)
 'use strict';
 async function exportAllToGas() {
   if (!gasUrl) {
@@ -403,7 +403,7 @@ async function importFreeePayrollCSV() {
       const r = new FileReader();
       r.onload = e => res(e.target.result);
       r.onerror = rej;
-      r.readAsText(file, 'UTF-8');
+      r.readAsText(file, 'Shift_JIS');
     });
 
     const rows = _parseCSV(text);
