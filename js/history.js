@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-23 07:09 — '사원' 변경
+﻿// 수정: 2026-05-23 08:30 — renderHistory 기간별 요율 적용, calcShotoku fuyou/isOtsu 누락 수정
 'use strict';
 function buildAnnualEmpSel() {
   const sel = document.getElementById('annualEmpSel');
@@ -171,13 +171,16 @@ function renderHistory() {
     const totalPay=base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
     // 標準報酬月額：残業手当(ot)は変動給のため除外
     const hyo=getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field);
-    const kenko=Math.floor(hyo*rates.kenko/100/2);
-    const kaigo2=isKaigo(emp)?Math.floor(hyo*rates.kaigo/100/2):0;
-    const kodomo=Math.floor(hyo*rates.kodomo/100/2);
-    const nenkin=Math.floor(hyo*rates.nenkin/100/2);
-    const koyo=Math.floor(totalPay*rates.koyo/100);
+    const r=getRatesForYM(year,m);
+    const kenko=Math.floor(hyo*r.kenko/100/2);
+    const kaigo2=isKaigo(emp)?Math.floor(hyo*r.kaigo/100/2):0;
+    const kodomo=Math.floor(hyo*r.kodomo/100/2);
+    const nenkin=Math.floor(hyo*r.nenkin/100/2);
+    const koyo=Math.floor(totalPay*r.koyo/100);
     const shakai=kenko+kaigo2+kodomo+nenkin+koyo;
-    const shotoku=calcShotoku(totalPay-commute-shakai);
+    const fuyou=parseInt(emp.fuyouCount)||0;
+    const isOtsu=(emp.shotokuKbn||'ko')==='otsu';
+    const shotoku=Math.max(0,calcShotoku(totalPay-commute-shakai,fuyou,isOtsu));
     const jumin=parseInt(d['k-jumin']||0),nencho=parseInt(d['k-nencho']||0);
     const totalKojo=shakai+shotoku+jumin+nencho;
     const net=totalPay-totalKojo;
