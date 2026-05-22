@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-22 — 협회けんぽ URL 수정 + 연도 직접 URL fast path + 전각 숫자 반각 변환 추가
+// 수정: 2026-05-22 — URL 수정 + fast path + 전각변환 + HTML 선두 1000자 로그 추가
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -136,6 +136,7 @@ function scrapeKenpoRates() {
   const directYearUrl = KENPO_INDEX_URL + 'r' + r2 + '/';
   Logger.log('Step1(direct): ' + directYearUrl);
   let idxHtml = kenpoFetch(directYearUrl, opts);
+  if (idxHtml) Logger.log('HTML선두1000: ' + idxHtml.substring(0, 1000));
   let rates = idxHtml ? extractRatesFromHtml(idxHtml) : { kenko: null, kaigo: null };
   Logger.log('年度直接URL抽出: kenko=' + rates.kenko + ' kaigo=' + rates.kaigo);
 
@@ -144,6 +145,7 @@ function scrapeKenpoRates() {
     Logger.log('Step2(index): ' + KENPO_INDEX_URL);
     const fetchedIdx = kenpoFetch(KENPO_INDEX_URL, opts);
     if (fetchedIdx) {
+      Logger.log('HTML선두1000(index): ' + fetchedIdx.substring(0, 1000));
       if (!idxHtml) idxHtml = fetchedIdx;
       rates = extractRatesFromHtml(fetchedIdx);
       Logger.log('インデックスHTML抽出: kenko=' + rates.kenko + ' kaigo=' + rates.kaigo);
@@ -154,6 +156,7 @@ function scrapeKenpoRates() {
         if (yearUrl) {
           const yearHtml = kenpoFetch(yearUrl, opts);
           if (yearHtml) {
+            Logger.log('HTML선두1000(year): ' + yearHtml.substring(0, 1000));
             rates = extractRatesFromHtml(yearHtml);
             Logger.log('年度ページHTML抽出: kenko=' + rates.kenko + ' kaigo=' + rates.kaigo);
             if (rates.kenko == null) {
