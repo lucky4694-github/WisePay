@@ -1,6 +1,6 @@
 <!-- ================================================
   WisePay (給与Pro by Wisewires)
-  수정: 2026-05-22 16:16 — applyRates 시 요율 이력 자동 Google 업로드
+  수정: 2026-05-22 17:32 — 급여명세 미선택 플레이스홀더 추가, autoLoad 시 직원 자동선택 제거
 ================================================ -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -146,6 +146,13 @@
       <button class="year-btn" onclick="changeYear(1)">▶</button>
     </div>
     <div class="month-tabs" id="monthTabs"></div>
+  </div>
+
+  <!-- 미선택 플레이스홀더 -->
+  <div id="payrollPlaceholder" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:var(--text3);text-align:center;">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="margin-bottom:16px;opacity:0.35;"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+    <div style="font-size:15px;font-weight:500;margin-bottom:6px;color:var(--text2);" id="t-payroll-ph-main">직원을 선택해 주세요</div>
+    <div style="font-size:12px;" id="t-payroll-ph-sub">위 드롭다운에서 직원을 선택하면 급여 명세가 표시됩니다.</div>
   </div>
 
   <!-- EMP HEADER -->

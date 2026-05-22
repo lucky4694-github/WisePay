@@ -1,4 +1,4 @@
-// 수정: 2026-05-22 16:16 — applyRates 시 요율 이력 자동 Google 업로드 함수 추가
+// 수정: 2026-05-22 17:32 — autoLoad/import 시 직원 자동선택(currentEmpIdx=0) 제거
 'use strict';
 async function exportAllToGas() {
   if (!gasUrl) {
@@ -277,7 +277,6 @@ async function importAllFromGas() {
     }
     const msg=jp?'✅ 完了！従業員'+(d.employees||[]).length+'名、給与'+(d.payrolls||[]).length+'件':'✅ 완료! 직원 '+(d.employees||[]).length+'명, 급여 '+(d.payrolls||[]).length+'건';
     if(statusEl) statusEl.innerHTML='<span style="color:var(--green)">'+msg+'</span>';
-    if(employees.length > 0 && currentEmpIdx < 0) currentEmpIdx = 0;
     renderEmpSelect(); renderEmpList(); loadPayrollForm();
     applyRatesForYM(currentYear,currentMonth); updateRatesDisplay(); renderRatesPage();
     buildHistEmpSel(); renderHistory(); buildAnnualEmpSel(); renderAnnual(); checkRateBanner();
@@ -358,7 +357,6 @@ async function autoLoadFromGas() {
       }));
       saveRateHistory();
     }
-    if (employees.length > 0 && currentEmpIdx < 0) currentEmpIdx = 0;
     renderEmpSelect();
     loadPayrollForm();
     applyRatesForYM(currentYear, currentMonth);

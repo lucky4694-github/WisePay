@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-21 15:14 — 전체 i18n 누락 항목 일괄 추가 (이력/직원/요율/모달 등 30여 건)
+﻿// 수정: 2026-05-22 17:32 — 급여명세 플레이스홀더 i18n 추가
 'use strict';
 function setTxt(id, jp, kr) {
   const el = document.getElementById(id);
@@ -122,6 +122,8 @@ function applyLang() {
   setTxt('empFormTitle', '従業員を選択してください', '직원을 선택해 주세요');
   setTxt('t-emp-select-hint', '左のリストから従業員を選択するか、「新規」ボタンで登録してください。', '좌측 목록에서 직원을 선택하거나, 「직원 추가」 버튼으로 등록해 주세요。');
 
+  setTxt('t-payroll-ph-main', '従業員を選択してください', '직원을 선택해 주세요');
+  setTxt('t-payroll-ph-sub', '上のドロップダウンから従業員を選択すると給与明細が表示されます。', '위 드롭다운에서 직원을 선택하면 급여 명세가 표시됩니다.');
   setTxt('t-rates-title', '適用保険料率（2026年度・東京都）', '적용 보험료율（2026년도・도쿄도）');
   setHtml('t-rt-kenko', '健康保険料率<br>（東京都）', '건강보험료율<br>（도쿄도）');
   setHtml('t-rt-kaigo', '介護保険料率<br>（全国一律）', '개호보험료율<br>（전국 일률）');

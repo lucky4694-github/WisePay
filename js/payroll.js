@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-21 12:03 — localStorage 키 사원번호 4자리 패딩 통일 (급여 데이터 표시 버그 수정)
+﻿// 수정: 2026-05-22 17:32 — 미선택 상태 플레이스홀더 표시 추가
 'use strict';
 function renderMonthTabs() {
   const c = document.getElementById('monthTabs');
@@ -103,9 +103,11 @@ function loadPayrollForm() {
     if(ci) ci.style.display = show ? '' : 'none';
   };
 
+  const ph = document.getElementById('payrollPlaceholder');
   // 미선택 상태
   if(currentEmpIdx < 0 || !employees.length) {
     showContent(false);
+    if(ph) ph.style.display = '';
     payrollDirty = false;
     const saveBtn = document.getElementById('btn-save');
     if(saveBtn) saveBtn.style.background = '';
@@ -113,6 +115,7 @@ function loadPayrollForm() {
   }
 
   if(currentEmpIdx >= employees.length) currentEmpIdx = 0;
+  if(ph) ph.style.display = 'none';
   showContent(true);
 
   const emp = employees[currentEmpIdx];
