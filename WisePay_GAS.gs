@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-22 13:30 — 시트명 한글화 (従業員→사원정보 등) + 마이그레이션 함수 추가
+// 수정: 2026-05-22 13:50 — 잔여 시트 정리 함수 추가 (보험료율이력→보험요율데이터, 직원정보→사원정보)
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -442,4 +442,35 @@ function migrateToKoreanSheets() {
   });
 
   Logger.log('마이그레이션 완료');
+}
+
+// ── 잔여 한글 시트 정리 (한 번만 실행) ───────────────────────────
+// 보험료율이력 → 보험요율데이터, 직원정보 → 사원정보
+function migrateExtraSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const pairs = [
+    { from: '보험료율이력', to: '보험요율데이터' },
+    { from: '직원정보',     to: '사원정보'      },
+  ];
+
+  pairs.forEach(({ from, to }) => {
+    const srcSheet = ss.getSheetByName(from);
+    if (!srcSheet) { Logger.log('스킵 (없음): ' + from); return; }
+
+    const srcData = srcSheet.getDataRange().getValues();
+    if (srcData.length <= 1) {
+      Logger.log('스킵 (데이터 없음): ' + from);
+    } else {
+      let dstSheet = ss.getSheetByName(to);
+      if (!dstSheet) dstSheet = ss.insertSheet(to);
+      dstSheet.clearContents();
+      dstSheet.getRange(1, 1, srcData.length, srcData[0].length).setValues(srcData);
+      Logger.log('이전 완료: ' + from + ' → ' + to + ' (' + (srcData.length - 1) + '행)');
+    }
+
+    ss.deleteSheet(srcSheet);
+    Logger.log('삭제 완료: ' + from);
+  });
+
+  Logger.log('정리 완료');
 }
