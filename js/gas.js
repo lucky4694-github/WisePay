@@ -257,6 +257,7 @@ async function importAllFromGas() {
         commute:parseInt(e.commute)||0
       }));
       localStorage.setItem(LS.emp,JSON.stringify(employees));
+      syncFuyouFromFamilies();
     }
     if(d.payrolls&&d.payrolls.length>0){
       d.payrolls.forEach(p=>{
@@ -339,6 +340,7 @@ async function autoLoadFromGas() {
         commute: parseInt(e.commute) || 0
       }));
       localStorage.setItem(LS.emp, JSON.stringify(employees));
+      syncFuyouFromFamilies();
     }
     if (d.payrolls && d.payrolls.length > 0) {
       d.payrolls.forEach(p => {

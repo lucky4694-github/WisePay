@@ -1,5 +1,19 @@
-﻿// 수정: 2026-05-22 18:13 — gotoPage history/annual try-catch 보호
+﻿// 수정: 2026-05-23 — syncFuyouFromFamilies 공용 함수 추가 (GAS 동기화 후에도 부양수 재계산)
 'use strict';
+
+// families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
+function syncFuyouFromFamilies() {
+  let changed = false;
+  employees.forEach(emp => {
+    const cnt = Math.min((emp.families||[]).filter(f=>{
+      if(!f.birth) return false;
+      return (currentYear - parseInt(f.birth.substring(0,4))) >= 16;
+    }).length, 7);
+    if((emp.fuyouCount||0) !== cnt) { emp.fuyouCount = cnt; changed = true; }
+  });
+  if(changed) localStorage.setItem(LS.emp, JSON.stringify(employees));
+  return changed;
+}
 // ══ INIT ══
 window.addEventListener('DOMContentLoaded', () => {
   LANG = localStorage.getItem(LS.lang) || 'KR';
@@ -13,15 +27,7 @@ function initApp() {
   try { const s = localStorage.getItem(LS.emp); if(s) employees = JSON.parse(s); } catch(e){}
   try { const s = localStorage.getItem(LS.rateHistory); if(s) rateHistory = JSON.parse(s); } catch(e){}
   // 마이그레이션: 부양가족 families 기반으로 fuyouCount 자동 갱신
-  let fuyouMigrated = false;
-  employees.forEach(emp => {
-    const cnt = Math.min((emp.families||[]).filter(f=>{
-      if(!f.birth) return false;
-      return (currentYear - parseInt(f.birth.substring(0,4))) >= 16;
-    }).length, 7);
-    if((emp.fuyouCount||0) !== cnt) { emp.fuyouCount = cnt; fuyouMigrated = true; }
-  });
-  if(fuyouMigrated) localStorage.setItem(LS.emp, JSON.stringify(employees));
+  syncFuyouFromFamilies();
   // 마이그레이션: 2026-04 이전 항목의 kodomo가 0.23이면 0으로 수정
   // 2026-01~02의 kaigo가 1.60이면 1.59로 수정 (令和7年度 실제 요율)
   let migrated = false;
