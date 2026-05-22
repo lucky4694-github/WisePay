@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-22 — URL 수정 + 東京都 파싱 수정 (이후 텍스트만, 당년도 값 취득)
+// 수정: 2026-05-22 12:45 — 디버그 로그 제거 (파싱 정상 확인 후)
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -136,7 +136,6 @@ function scrapeKenpoRates() {
   const directYearUrl = KENPO_INDEX_URL + 'r' + r2 + '/';
   Logger.log('Step1(direct): ' + directYearUrl);
   let idxHtml = kenpoFetch(directYearUrl, opts);
-  if (idxHtml) Logger.log('HTML선두1000: ' + idxHtml.substring(0, 1000));
   let rates = idxHtml ? extractRatesFromHtml(idxHtml) : { kenko: null, kaigo: null };
   Logger.log('年度直接URL抽出: kenko=' + rates.kenko + ' kaigo=' + rates.kaigo);
 
@@ -145,7 +144,6 @@ function scrapeKenpoRates() {
     Logger.log('Step2(index): ' + KENPO_INDEX_URL);
     const fetchedIdx = kenpoFetch(KENPO_INDEX_URL, opts);
     if (fetchedIdx) {
-      Logger.log('HTML선두1000(index): ' + fetchedIdx.substring(0, 1000));
       if (!idxHtml) idxHtml = fetchedIdx;
       rates = extractRatesFromHtml(fetchedIdx);
       Logger.log('インデックスHTML抽出: kenko=' + rates.kenko + ' kaigo=' + rates.kaigo);
@@ -156,7 +154,6 @@ function scrapeKenpoRates() {
         if (yearUrl) {
           const yearHtml = kenpoFetch(yearUrl, opts);
           if (yearHtml) {
-            Logger.log('HTML선두1000(year): ' + yearHtml.substring(0, 1000));
             rates = extractRatesFromHtml(yearHtml);
             Logger.log('年度ページHTML抽出: kenko=' + rates.kenko + ' kaigo=' + rates.kaigo);
             if (rates.kenko == null) {
@@ -265,7 +262,6 @@ function extractRatesFromText(text) {
     const endPos = nextPrefPos > 0 ? afterStart + nextPrefPos : tokyoIdx + 150;
     const segment = normalized.slice(tokyoIdx, endPos);
     const nums = extractNumbers(segment).filter(v => v >= 8.0 && v <= 12.0);
-    Logger.log('東京都セグメント: [' + segment + '] 数値: ' + JSON.stringify(nums));
     if (nums.length > 0) kenko = nums[nums.length - 1]; // 末尾が当年度率
   }
   // フォールバック
