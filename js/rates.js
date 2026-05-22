@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-21 10:44 — 빈 날짜 요율 이력 항목 방지 (updateRateHistoryFrom 유효성 검사)
+﻿// 수정: 2026-05-22 16:16 — applyRates 후 요율 이력 자동 Google 업로드
 'use strict';
 async function openRateModal() {
   const jp = LANG==='JP';
@@ -69,6 +69,7 @@ function applyRates() {
   if(existing >= 0) rateHistory[existing] = entry;
   else { rateHistory.push(entry); rateHistory.sort((a,b) => a.from > b.from ? 1 : -1); }
   saveRateHistory();
+  uploadRateHistoryToGas();
   rates = { kenko:r.kenko, kaigo:r.kaigo, kodomo:r.kodomo, nenkin:r.nenkin, koyo:r.koyo };
   updateRatesDisplay(); recalc(); renderRatesPage();
   closeModal('modal-rates');

@@ -1,4 +1,4 @@
-// 수정: 2026-05-22 13:10 — importAllFromGas/autoLoadFromGas 급여키 패딩 수정 + 누락 렌더 추가
+// 수정: 2026-05-22 16:16 — applyRates 시 요율 이력 자동 Google 업로드 함수 추가
 'use strict';
 async function exportAllToGas() {
   if (!gasUrl) {
@@ -370,6 +370,21 @@ async function autoLoadFromGas() {
     showToast(LANG === 'JP' ? 'Google同期完了 ✓' : 'Google 동기화 완료 ✓', 's');
   } catch (err) {
     console.warn('GAS auto-load failed:', err);
+  }
+}
+
+// 요율 이력만 조용히 Google 시트에 업로드 (fire-and-forget)
+async function uploadRateHistoryToGas() {
+  if (!gasUrl) return;
+  try {
+    await fetch(gasUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ type: 'exportAll', rateHistory: rateHistory })
+    });
+  } catch(err) {
+    console.warn('uploadRateHistoryToGas error:', err);
   }
 }
 
