@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-22 17:49 — initApp에 buildHistEmpSel/buildAnnualEmpSel 추가 (드롭다운 초기화)
+﻿// 수정: 2026-05-22 18:08 — initApp 드롭다운 초기화 순서 수정 (renderMonthTabs 뒤로 이동)
 'use strict';
 // ══ INIT ══
 window.addEventListener('DOMContentLoaded', () => {
@@ -56,14 +56,14 @@ function initApp() {
   });
 
   renderEmpSelect();
-  buildHistEmpSel();
-  buildAnnualEmpSel();
   renderMonthTabs();
   applyRatesForYM(currentYear, currentMonth);
   loadPayrollForm();
   updateRatesDisplay();
   checkRateBanner();
   updateGasStatus();
+  try { buildHistEmpSel(); } catch(e) {}
+  try { buildAnnualEmpSel(); } catch(e) {}
   setTimeout(() => onMonthYearChange(), 100);
   // 로그인 후 Google 시트에서 최신 데이터 자동 로드
   autoLoadFromGas();
