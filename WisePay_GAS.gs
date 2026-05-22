@@ -256,6 +256,14 @@ function extractRatesFromText(text) {
   let kenko = null;
   let kaigo = null;
 
+  // 「東京都」周辺テキストをログ出力（デバッグ用）
+  const tokyoIdx = normalized.indexOf('東京都');
+  if (tokyoIdx >= 0) {
+    Logger.log('東京都周辺テキスト: [' + normalized.slice(Math.max(0, tokyoIdx - 50), tokyoIdx + 300) + ']');
+  } else {
+    Logger.log('東京都: テキスト内に見つからず');
+  }
+
   // まずは「東京都」「東京」周辺を探す
   kenko = findNumberNearKeyword(normalized, '東京都|東京', 8.0, 12.0, 400);
   if (kenko == null) {
