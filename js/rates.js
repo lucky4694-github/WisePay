@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-22 17:49 — 적용 중 행 월탭 스타일로 변경 + 적용 년월 타이틀 표시
+﻿// 수정: 2026-05-22 18:03 — 적용 중 행: 년월만 파란 pill 스타일, 행 전체 배경 제거
 'use strict';
 async function openRateModal() {
   const jp = LANG==='JP';
@@ -131,18 +131,16 @@ function renderRateHistoryRows() {
     const curApplied = getRatesForYM(currentYear, currentMonth);
     const isCurrent = curApplied.from === r.from;
     const tr = document.createElement('tr');
-    if(isCurrent) { tr.style.background='var(--accent)'; tr.style.color='#fff'; }
-    const bd = isCurrent ? 'rgba(255,255,255,0.15)' : 'var(--border2)';
     tr.innerHTML = `
-      <td style="padding:6px 10px;border-bottom:1px solid ${bd};">
-        <span style="font-size:12px;font-weight:600;">${fmtYM(r.from)}</span>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--border2);">
+        <span style="font-size:12px;font-weight:600;${isCurrent?'background:var(--accent);color:#fff;border-radius:20px;padding:2px 10px;display:inline-block;':''}">${fmtYM(r.from)}</span>
       </td>
-      ${keys.map(k=>`<td style="padding:6px 4px;border-bottom:1px solid ${bd};text-align:right;">
-        <span style="font-size:12px;font-weight:${isCurrent?'600':'400'};">${Number(r[k]).toFixed(2)}</span>
-        <span style="font-size:10px;color:${isCurrent?'rgba(255,255,255,0.7)':'var(--text3)'};">%</span>
+      ${keys.map(k=>`<td style="padding:6px 4px;border-bottom:1px solid var(--border2);text-align:right;">
+        <span style="font-size:12px;font-weight:${isCurrent?'600':'400'};color:${isCurrent?'var(--accent)':'var(--text)'};">${Number(r[k]).toFixed(2)}</span>
+        <span style="font-size:10px;color:var(--text3);">%</span>
       </td>`).join('')}
-      <td style="padding:6px 4px;border-bottom:1px solid ${bd};text-align:center;">
-        <button class="btn btn-sm" onclick="deleteRateHistoryRow(${rateHistory.indexOf(r)})" style="color:${isCurrent?'rgba(255,255,255,0.8)':'var(--red)'};padding:2px 6px;font-size:11px;">✕</button>
+      <td style="padding:6px 4px;border-bottom:1px solid var(--border2);text-align:center;">
+        <button class="btn btn-sm" onclick="deleteRateHistoryRow(${rateHistory.indexOf(r)})" style="color:var(--red);padding:2px 6px;font-size:11px;">✕</button>
       </td>`;
     tbody.appendChild(tr);
   });
