@@ -1,6 +1,6 @@
 <!-- ================================================
   WisePay (給与Pro by Wisewires)
-  수정: 2026-05-22 17:32 — 급여명세 미선택 플레이스홀더 추가, autoLoad 시 직원 자동선택 제거
+  수정: 2026-05-22 17:49 — 요율 행 월탭 스타일 적용, 적용년월 표시, 이력/연간 드롭다운 수정
 ================================================ -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -319,7 +319,10 @@
     <p style="font-size:12px;color:var(--text3);" id="t-rates-desc">協会けんぽ東京都・2026年度の料率。改定時に更新してください。</p>
   </div>
   <div class="card" style="margin-bottom:12px;">
-    <div class="card-head"><span class="card-title" id="t-rates-current">現在の適用料率</span></div>
+    <div class="card-head">
+      <span class="card-title" id="t-rates-current">現在の適用料率</span>
+      <span id="ratesAppliedYM" style="font-size:11px;color:var(--accent);font-weight:500;margin-left:8px;"></span>
+    </div>
     <div id="ratesFormArea" style="padding:14px 13px;"></div>
   </div>
   <div style="display:flex;gap:7px;">

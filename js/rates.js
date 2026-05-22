@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-22 16:16 — applyRates 후 요율 이력 자동 Google 업로드
+﻿// 수정: 2026-05-22 17:49 — 적용 중 행 월탭 스타일로 변경 + 적용 년월 타이틀 표시
 'use strict';
 async function openRateModal() {
   const jp = LANG==='JP';
@@ -81,6 +81,11 @@ function applyRates() {
 
 function updateRatesDisplay() {
   ['kenko','kaigo','kodomo','nenkin','koyo'].forEach(k=>{const el=document.getElementById('rt-'+k);if(el)el.textContent=rates[k].toFixed(2)+'%';});
+  const ymEl = document.getElementById('ratesAppliedYM');
+  if(ymEl) {
+    const applied = getRatesForYM(currentYear, currentMonth);
+    ymEl.textContent = LANG==='JP' ? `（${fmtYM(applied.from)}適用）` : `（${fmtYM(applied.from)} 적용）`;
+  }
 }
 
 function renderRatesPage() {
@@ -123,22 +128,21 @@ function renderRateHistoryRows() {
   const keys = ['kenko','kaigo','kodomo','nenkin','koyo'];
   tbody.innerHTML = '';
   [...rateHistory].sort((a,b)=>a.from>b.from?-1:1).forEach((r,i) => {
-    // 현재 선택 월에 적용 중인 요율인지 표시
     const curApplied = getRatesForYM(currentYear, currentMonth);
     const isCurrent = curApplied.from === r.from;
     const tr = document.createElement('tr');
-    tr.style.background = isCurrent ? 'var(--accent2)' : '';
+    if(isCurrent) { tr.style.background='var(--accent)'; tr.style.color='#fff'; }
+    const bd = isCurrent ? 'rgba(255,255,255,0.15)' : 'var(--border2)';
     tr.innerHTML = `
-      <td style="padding:6px 10px;border-bottom:1px solid var(--border2);">
-        <span style="font-size:12px;font-weight:500;">${fmtYM(r.from)}</span>
-        ${isCurrent?`<div style="margin-top:3px;"><span style="font-size:10px;background:var(--accent);color:white;border-radius:20px;padding:1px 6px;">${jp?'適用中':'적용 중'}</span></div>`:''}
+      <td style="padding:6px 10px;border-bottom:1px solid ${bd};">
+        <span style="font-size:12px;font-weight:600;">${fmtYM(r.from)}</span>
       </td>
-      ${keys.map(k=>`<td style="padding:6px 4px;border-bottom:1px solid var(--border2);text-align:right;">
-        <span style="font-size:12px;font-weight:${isCurrent?'600':'400'};color:${isCurrent?'var(--accent)':'var(--text)'};">${Number(r[k]).toFixed(2)}</span>
-        <span style="font-size:10px;color:var(--text3);">%</span>
+      ${keys.map(k=>`<td style="padding:6px 4px;border-bottom:1px solid ${bd};text-align:right;">
+        <span style="font-size:12px;font-weight:${isCurrent?'600':'400'};">${Number(r[k]).toFixed(2)}</span>
+        <span style="font-size:10px;color:${isCurrent?'rgba(255,255,255,0.7)':'var(--text3)'};">%</span>
       </td>`).join('')}
-      <td style="padding:6px 4px;border-bottom:1px solid var(--border2);text-align:center;">
-        <button class="btn btn-sm" onclick="deleteRateHistoryRow(${rateHistory.indexOf(r)})" style="color:var(--red);padding:2px 6px;font-size:11px;">✕</button>
+      <td style="padding:6px 4px;border-bottom:1px solid ${bd};text-align:center;">
+        <button class="btn btn-sm" onclick="deleteRateHistoryRow(${rateHistory.indexOf(r)})" style="color:${isCurrent?'rgba(255,255,255,0.8)':'var(--red)'};padding:2px 6px;font-size:11px;">✕</button>
       </td>`;
     tbody.appendChild(tr);
   });

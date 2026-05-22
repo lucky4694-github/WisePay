@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-22 14:20 — resetLocalData 시 직원 편집 폼 강제 초기화 추가
+﻿// 수정: 2026-05-22 17:49 — initApp에 buildHistEmpSel/buildAnnualEmpSel 추가 (드롭다운 초기화)
 'use strict';
 // ══ INIT ══
 window.addEventListener('DOMContentLoaded', () => {
@@ -56,6 +56,8 @@ function initApp() {
   });
 
   renderEmpSelect();
+  buildHistEmpSel();
+  buildAnnualEmpSel();
   renderMonthTabs();
   applyRatesForYM(currentYear, currentMonth);
   loadPayrollForm();
