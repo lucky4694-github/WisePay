@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-22 17:32 — 급여명세 플레이스홀더 i18n 추가
+﻿// 수정: 2026-05-23 07:09 — '사원' 변경
 'use strict';
 function setTxt(id, jp, kr) {
   const el = document.getElementById(id);

@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-22 19:30 — renderAnnual 내 const jp 중복 선언 제거 (SyntaxError 수정)
+﻿// 수정: 2026-05-23 07:09 — '사원' 변경
 'use strict';
 function buildAnnualEmpSel() {
   const sel = document.getElementById('annualEmpSel');

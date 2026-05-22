@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-22 17:32 — 미선택 상태 플레이스홀더 표시 추가
+﻿// 수정: 2026-05-23 07:09 — '사원' 변경
 'use strict';
 function renderMonthTabs() {
   const c = document.getElementById('monthTabs');

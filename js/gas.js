@@ -1,4 +1,4 @@
-// 수정: 2026-05-22 17:32 — autoLoad/import 시 사원 자동선택(currentEmpIdx=0) 제거
+// 수정: 2026-05-23 07:09 — GAS 동기화 후 fuyouCount 재계산(syncFuyouFromFamilies), '사원' 변경
 'use strict';
 async function exportAllToGas() {
   if (!gasUrl) {

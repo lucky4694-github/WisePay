@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-23 — syncFuyouFromFamilies 공용 함수 추가 (GAS 동기화 후에도 부양수 재계산)
+﻿// 수정: 2026-05-23 07:09 — syncFuyouFromFamilies 공용 함수 추가, GAS 동기화 후 fuyouCount 재계산, '사원' 변경
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장

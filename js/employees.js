@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-23 — 부양가족 자동 계산 반영, '직원' → '사원' 전체 변경
+﻿// 수정: 2026-05-23 07:09 — 부양가족 자동 계산 반영, '사원' 변경
 'use strict';
 function renderEmpList() {
   const body=document.getElementById('empListBody');
