@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-22 18:13 — null 직원 요소 방어 + gotoPage 연계 안전성
+﻿// 수정: 2026-05-22 19:30 — renderAnnual 내 const jp 중복 선언 제거 (SyntaxError 수정)
 'use strict';
 function buildAnnualEmpSel() {
   const sel = document.getElementById('annualEmpSel');
@@ -57,7 +57,6 @@ function renderAnnual() {
   const year = parseInt(document.getElementById('annualYearSel')?.value)||2026;
   if(isNaN(empIdx)||!employees[empIdx]) return;
   const emp = employees[empIdx];
-  const jp = LANG==='JP';
   const mu = jp?'月':'월';
   const fmt = n => n.toLocaleString();
 
