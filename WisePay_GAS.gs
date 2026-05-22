@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-22 14:40 — SHEET_RATE 보험요율→보험료율 수정 + renameRateSheet 추가
+// 수정: 2026-05-22 18:30 — renameRateSheet → migrateRateData 교체 (데이터 복사+삭제)
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -475,11 +475,19 @@ function migrateExtraSheets() {
   Logger.log('정리 완료');
 }
 
-// ── 보험요율데이터 → 보험료율데이터 시트 이름 수정 (한 번만 실행) ──
-function renameRateSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const old = ss.getSheetByName('보험요율데이터');
-  if (!old) { Logger.log('보험요율데이터 시트 없음 — 스킵'); return; }
-  old.setName('보험료율데이터');
-  Logger.log('이름 변경 완료: 보험요율데이터 → 보험료율데이터');
+// ── 보험요율데이터 → 보험료율데이터 데이터 이전 후 삭제 (한 번만 실행) ──
+function migrateRateData() {
+  const ss  = SpreadsheetApp.getActiveSpreadsheet();
+  const src = ss.getSheetByName('보험요율데이터');
+  if (!src) { Logger.log('보험요율데이터 시트 없음 — 스킵'); return; }
+
+  const data = src.getDataRange().getValues();
+  let dst = ss.getSheetByName('보험료율데이터');
+  if (!dst) dst = ss.insertSheet('보험료율데이터');
+  dst.clearContents();
+  dst.getRange(1, 1, data.length, data[0].length).setValues(data);
+  Logger.log('이전 완료: 보험요율데이터 → 보험료율데이터 (' + (data.length - 1) + '행)');
+
+  ss.deleteSheet(src);
+  Logger.log('삭제 완료: 보험요율데이터');
 }
