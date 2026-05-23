@@ -1,4 +1,4 @@
-// 수정: 2026-05-23 08:03 — freee CSV 인코딩 UTF-8 → Shift_JIS 수정 (이름 깨짐 수정)
+// 수정: 2026-05-23 09:20 — autoLoadFromGas/importAllFromGas 후 migrateRateHistory 호출
 'use strict';
 async function exportAllToGas() {
   if (!gasUrl) {
@@ -274,7 +274,8 @@ async function importAllFromGas() {
         nenkin:parseFloat(r.nenkin)||18.30,
         koyo:parseFloat(r.koyo)||0.50
       }));
-      saveRateHistory();
+      const needsSync = migrateRateHistory();
+      if (needsSync) uploadRateHistoryToGas();
     }
     const msg=jp?'✅ 完了！従業員'+(d.employees||[]).length+'名、給与'+(d.payrolls||[]).length+'件':'✅ 완료! 사원 '+(d.employees||[]).length+'명, 급여 '+(d.payrolls||[]).length+'건';
     if(statusEl) statusEl.innerHTML='<span style="color:var(--green)">'+msg+'</span>';
@@ -357,7 +358,9 @@ async function autoLoadFromGas() {
         nenkin: parseFloat(r.nenkin) || 18.30,
         koyo: parseFloat(r.koyo) || 0.50
       }));
-      saveRateHistory();
+      // GAS 데이터 다운로드 후 누락 항목 보정 — 변경 있으면 GAS에 역업로드해서 동기화
+      const needsSync = migrateRateHistory();
+      if (needsSync) uploadRateHistoryToGas();
     }
     renderEmpSelect();
     loadPayrollForm();

@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-23 09:09 — 오늘 기준/선택월 기준 적용 행 분리 표시
+﻿// 수정: 2026-05-23 09:20 — applyRates 3월/4월 분리, autoLoadFromGas 마이그레이션 역업로드
 'use strict';
 async function openRateModal() {
   const jp = LANG==='JP';
@@ -64,10 +64,41 @@ function applyRates() {
   if (!_pendingScrapedRates) return;
   const jp = LANG==='JP';
   const r = _pendingScrapedRates;
-  const entry = { from:r.from, kenko:r.kenko, kaigo:r.kaigo, kodomo:r.kodomo, nenkin:r.nenkin, koyo:r.koyo };
-  const existing = rateHistory.findIndex(h => h.from === r.from);
-  if(existing >= 0) rateHistory[existing] = entry;
-  else { rateHistory.push(entry); rateHistory.sort((a,b) => a.from > b.from ? 1 : -1); }
+
+  // 스크래핑 결과 from은 항상 'YYYY-03' (건강보험 개정월)
+  // 3월 항목: kenko/kaigo만 갱신. kodomo=0.00(자녀지원금은 4월~), koyo는 기존값 유지
+  const marchFrom = r.from;
+  const [fy] = marchFrom.split('-').map(Number);
+  const aprilFrom = `${fy}-04`;
+
+  const existingMarch = rateHistory.find(h => h.from === marchFrom);
+  const marchEntry = {
+    from: marchFrom,
+    kenko:  r.kenko,
+    kaigo:  r.kaigo,
+    kodomo: 0.00,   // 자녀지원금은 4월부터
+    nenkin: r.nenkin,
+    koyo:   existingMarch ? existingMarch.koyo : r.koyo,  // 기존 고용보험율 유지
+  };
+
+  // 4월 항목: 고용보험·자녀지원금 모두 갱신
+  const existingApril = rateHistory.find(h => h.from === aprilFrom);
+  const aprilEntry = {
+    from: aprilFrom,
+    kenko:  r.kenko,
+    kaigo:  r.kaigo,
+    kodomo: r.kodomo,
+    nenkin: r.nenkin,
+    koyo:   r.koyo,
+  };
+
+  [marchEntry, aprilEntry].forEach(entry => {
+    const idx = rateHistory.findIndex(h => h.from === entry.from);
+    if(idx >= 0) rateHistory[idx] = entry;
+    else rateHistory.push(entry);
+  });
+  rateHistory.sort((a,b) => a.from > b.from ? 1 : -1);
+
   saveRateHistory();
   uploadRateHistoryToGas();
   rates = { kenko:r.kenko, kaigo:r.kaigo, kodomo:r.kodomo, nenkin:r.nenkin, koyo:r.koyo };
@@ -75,7 +106,7 @@ function applyRates() {
   closeModal('modal-rates');
   _pendingScrapedRates = null;
   document.getElementById('ratesUpdatedTxt').textContent =
-    jp ? `協会けんぽ取得 ${r.from} ✓` : `협회건포 취득 ${r.from} ✓`;
+    jp ? `協会けんぽ取得 ${marchFrom}・${aprilFrom} ✓` : `협회건포 취득 ${marchFrom}·${aprilFrom} ✓`;
   showToast(jp ? `保険料率を更新しました ✓` : `보험료율 업데이트됨 ✓`, 's');
 }
 

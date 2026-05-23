@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-23 08:21 — 2024-03/2025-03 요율 이력 마이그레이션 추가
+﻿// 수정: 2026-05-23 09:20 — migrateRateHistory 함수화, GAS 다운로드 후 마이그레이션+역업로드
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -22,60 +22,50 @@ window.addEventListener('DOMContentLoaded', () => {
   initApp();
 });
 
+// GAS 다운로드 후에도 실행 가능한 요율 이력 마이그레이션 함수
+// 반환값: GAS 역업로드가 필요한 경우 true
+function migrateRateHistory() {
+  let migrated = false;
+  // 오류 값 수정
+  rateHistory.forEach(r => {
+    if(r.from < '2026-04' && r.kodomo > 0)                      { r.kodomo = 0.00; migrated = true; }
+    if(r.from < '2026-03' && Math.abs(r.kaigo - 1.60) < 0.001) { r.kaigo  = 1.59; migrated = true; }
+    if(r.from < '2026-04' && Math.abs(r.koyo  - 0.50) < 0.001) { r.koyo   = 0.55; migrated = true; }
+  });
+  // 누락 항목 추가 (변경 시점 기준 전체 이력)
+  const defaults = [
+    { from:'2024-03', kenko:9.98, kaigo:1.60, kodomo:0.00, nenkin:18.30, koyo:0.60 },
+    { from:'2024-04', kenko:9.98, kaigo:1.60, kodomo:0.00, nenkin:18.30, koyo:0.60 },
+    { from:'2025-03', kenko:9.91, kaigo:1.59, kodomo:0.00, nenkin:18.30, koyo:0.60 },
+    { from:'2025-04', kenko:9.91, kaigo:1.59, kodomo:0.00, nenkin:18.30, koyo:0.55 },
+    { from:'2026-03', kenko:9.85, kaigo:1.62, kodomo:0.00, nenkin:18.30, koyo:0.55 },
+    { from:'2026-04', kenko:9.85, kaigo:1.62, kodomo:0.23, nenkin:18.30, koyo:0.50 },
+  ];
+  defaults.forEach(def => {
+    if(!rateHistory.find(r => r.from === def.from)) {
+      rateHistory.push({...def}); migrated = true;
+    }
+  });
+  // 중복 제거 + 정렬
+  const seenFrom = new Set();
+  const deduped = [];
+  [...rateHistory].sort((a,b)=>a.from>b.from?1:-1).reverse().forEach(r => {
+    if(!r.from || !/^\d{4}-\d{2}$/.test(r.from) || seenFrom.has(r.from)) return;
+    seenFrom.add(r.from); deduped.unshift(r);
+  });
+  if(deduped.length !== rateHistory.length) { rateHistory = deduped; migrated = true; }
+  else rateHistory.sort((a,b) => a.from > b.from ? 1 : -1);
+  if(migrated) localStorage.setItem(LS.rateHistory, JSON.stringify(rateHistory));
+  return migrated;
+}
+
 function initApp() {
   // load storage
   try { const s = localStorage.getItem(LS.emp); if(s) employees = JSON.parse(s); } catch(e){}
   try { const s = localStorage.getItem(LS.rateHistory); if(s) rateHistory = JSON.parse(s); } catch(e){}
-  // 마이그레이션: 부양가족 families 기반으로 fuyouCount 자동 갱신
+  // 마이그레이션
   syncFuyouFromFamilies();
-  // 마이그레이션: 2026-04 이전 항목의 kodomo가 0.23이면 0으로 수정
-  // 2026-01~02의 kaigo가 1.60이면 1.59로 수정 (令和7年度 실제 요율)
-  // koyo: 2026-04 이전 항목이 0.50이면 0.55로 수정 (2025年度=0.55%, 2026年度=0.50%)
-  let migrated = false;
-  rateHistory.forEach(r => {
-    if(r.from < '2026-04' && r.kodomo > 0) { r.kodomo = 0.00; migrated = true; }
-    if(r.from < '2026-03' && Math.abs(r.kaigo - 1.60) < 0.001) { r.kaigo = 1.59; migrated = true; }
-    if(r.from < '2026-04' && Math.abs(r.koyo - 0.50) < 0.001) { r.koyo = 0.55; migrated = true; }
-  });
-  // 2025-03 항목 없으면 추가 (令和7年度 건강보험 개정, 고용보험 아직 0.60%)
-  if(!rateHistory.find(r => r.from === '2025-03')) {
-    rateHistory.push({ from:'2025-03', kenko:9.91, kaigo:1.59, kodomo:0.00, nenkin:18.30, koyo:0.60 });
-    rateHistory.sort((a,b) => a.from > b.from ? 1 : -1);
-    migrated = true;
-  }
-  // 2025-04 항목 없으면 추가 (令和7年度 고용보험 0.55% 개정)
-  if(!rateHistory.find(r => r.from === '2025-04')) {
-    rateHistory.push({ from:'2025-04', kenko:9.91, kaigo:1.59, kodomo:0.00, nenkin:18.30, koyo:0.55 });
-    rateHistory.sort((a,b) => a.from > b.from ? 1 : -1);
-    migrated = true;
-  }
-  // 2024-03 항목 없으면 추가 (令和6年度: kenko:9.98, kaigo:1.60, koyo:0.60)
-  if(!rateHistory.find(r => r.from === '2024-03')) {
-    rateHistory.push({ from:'2024-03', kenko:9.98, kaigo:1.60, kodomo:0.00, nenkin:18.30, koyo:0.60 });
-    rateHistory.sort((a,b) => a.from > b.from ? 1 : -1);
-    migrated = true;
-  }
-  // 2026-04 항목이 없으면 추가
-  if(!rateHistory.find(r => r.from === '2026-04')) {
-    const base = rateHistory.find(r => r.from === '2026-03') || rateHistory[rateHistory.length-1];
-    if(base) {
-      rateHistory.push({ ...base, from:'2026-04', kodomo:0.23 });
-      rateHistory.sort((a,b) => a.from > b.from ? 1 : -1);
-      migrated = true;
-    }
-  }
-  // 요율 이력 정리: 빈 from 항목 제거 + 같은 from 중복 제거 (마지막 항목 우선)
-  const beforeClean = rateHistory.length;
-  const deduped = [];
-  const seenFrom = new Set();
-  [...rateHistory].sort((a,b)=>a.from>b.from?1:-1).reverse().forEach(r => {
-    if(!r.from || !/^\d{4}-\d{2}$/.test(r.from)) return;
-    if(seenFrom.has(r.from)) return;
-    seenFrom.add(r.from);
-    deduped.unshift(r);
-  });
-  if(deduped.length !== beforeClean) { rateHistory = deduped; migrated = true; }
-  if(migrated) localStorage.setItem(LS.rateHistory, JSON.stringify(rateHistory));
+  migrateRateHistory();
   // 구버전 단일 rates 호환
   try { const s = localStorage.getItem(LS.rates); if(s) { const r=JSON.parse(s); rates={...rates,...r}; } } catch(e){}
   // 구버전 급여 키 마이그레이션: 비패딩 사원번호(kyuyo_p_1_...) → 4자리(kyuyo_p_0001_...)
