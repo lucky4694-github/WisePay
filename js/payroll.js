@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-23 09:51 — 연도 변경 시 이전 연도→12월, 다음 연도→1월 자동 포커스
+﻿// 수정: 2026-05-23 10:37 — rate-month-banner: 최신 이력보다 이후 달일 때만 표시
 'use strict';
 function renderMonthTabs() {
   const c = document.getElementById('monthTabs');
@@ -35,11 +35,13 @@ function onMonthYearChange() {
   const jp = LANG==='JP';
   const ym = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
   applyRatesForYM(currentYear, currentMonth);
-  // 해당 월에 정확히 등록된 요율이 있는지 확인
-  const exactMatch = rateHistory.find(r => r.from === ym);
+  // 최신 이력보다 이후 달을 보고 있을 때만 경고 (이력 범위 내 달은 정상 상속)
+  const sortedHistory = [...rateHistory].sort((a,b) => a.from > b.from ? 1 : -1);
+  const lastKnown = sortedHistory[sortedHistory.length - 1];
+  const isBeyondKnown = lastKnown && ym > lastKnown.from;
   const bannerEl = document.getElementById('rate-month-banner');
   if(bannerEl) {
-    if(!exactMatch) {
+    if(isBeyondKnown) {
       const applied = getRatesForYM(currentYear, currentMonth);
       const msg = jp
         ? `【要率確認】${currentYear}年${currentMonth}月の保険料率は未登録のため、${applied.from}以降の料率を適用中です。「最新要率を取得」で確認・登録してください。`

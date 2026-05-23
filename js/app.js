@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-23 09:20 — migrateRateHistory 함수화, GAS 다운로드 후 마이그레이션+역업로드
+﻿// 수정: 2026-05-23 10:37 — migrateRateHistory: 2026-01 잘못된 항목 제거
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -26,6 +26,11 @@ window.addEventListener('DOMContentLoaded', () => {
 // 반환값: GAS 역업로드가 필요한 경우 true
 function migrateRateHistory() {
   let migrated = false;
+  // 잘못된 항목 제거: 2026-01은 실제 보험료율 변경이 없는 달 (구버전 기본값 잔재)
+  const invalidEntries = ['2026-01'];
+  const beforeLen = rateHistory.length;
+  rateHistory = rateHistory.filter(r => !invalidEntries.includes(r.from));
+  if(rateHistory.length !== beforeLen) migrated = true;
   // 오류 값 수정
   rateHistory.forEach(r => {
     if(r.from < '2026-04' && r.kodomo > 0)                      { r.kodomo = 0.00; migrated = true; }
