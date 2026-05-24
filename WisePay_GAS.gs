@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-24 13:03 — doPost employees 핸들러 추가 (사원 저장 시 즉시 구글 시트 반영)
+// 수정: 2026-05-24 13:45 — saveSheet: 배열/객체 값 JSON 직렬화 (families "[object Object]" 버그 수정)
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -121,7 +121,12 @@ function saveSheet(name, records) {
   const sheet = getSheet(name);
   sheet.clearContents();
   const headers = [...new Set(records.flatMap(r => Object.keys(r)))];
-  const rows = [headers, ...records.map(r => headers.map(h => r[h] !== undefined ? r[h] : ''))];
+  const rows = [headers, ...records.map(r => headers.map(function(h) {
+    const v = r[h] !== undefined ? r[h] : '';
+    // 배열·객체는 JSON 문자열로 직렬화 (예: families 배열)
+    return (Array.isArray(v) || (v !== null && typeof v === 'object' && !(v instanceof Date)))
+      ? JSON.stringify(v) : v;
+  }))];
   sheet.getRange(1, 1, rows.length, headers.length).setValues(rows);
 }
 
