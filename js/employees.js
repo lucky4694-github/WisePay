@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-24 14:26 — IME _pendingAdvance로 전각 Enter 처리, 통근수당 제거, 페이지 이동 경고
+﻿// 수정: 2026-05-24 14:32 — 전각/반각 IME 관련 코드 전체 제거 (toDateHalf, compositionend 등)
 'use strict';
 function renderEmpList() {
   const body=document.getElementById('empListBody');
@@ -143,8 +143,7 @@ function renderEmpFormFields(emp) {
       <input class="form-input" id="f-join" type="text" value="${normalizeDate(v('join'))}"
         placeholder="YYYY-MM-DD" autocomplete="off" data-required="1"
         onfocus="onDateFocus(this)" onblur="onDateBlur(this,'f-join-err')"
-        onkeydown="onDateKeydown(event,'f-birth','f-join-err')" oninput="onDateInput(event)"
-        oncompositionend="onDateCompositionEnd(event)">
+        onkeydown="onDateKeydown(event,'f-birth','f-join-err')" oninput="onDateInput(this)">
     </div>
     <div class="form-group">
       <div class="form-label-block">
@@ -156,8 +155,7 @@ function renderEmpFormFields(emp) {
       <input class="form-input" id="f-birth" type="text" value="${normalizeDate(v('birth'))}"
         placeholder="YYYY-MM-DD" autocomplete="off" data-required="1"
         onfocus="onDateFocus(this)" onblur="onDateBlur(this,'f-birth-err')"
-        onkeydown="onDateKeydown(event,'f-kaigo','f-birth-err')" oninput="onDateInput(event)"
-        oncompositionend="onDateCompositionEnd(event)">
+        onkeydown="onDateKeydown(event,'f-kaigo','f-birth-err')" oninput="onDateInput(this)">
     </div>
     <div class="form-group">
       <div class="form-label-block">
@@ -225,8 +223,7 @@ function renderEmpFormFields(emp) {
         <input class="form-input" id="fam-birth" type="text"
           placeholder="YYYY-MM-DD" autocomplete="off"
           onfocus="onDateFocus(this)" onblur="onDateBlur(this,'fam-birth-err')"
-          onkeydown="onDateKeydown(event,'addFam','fam-birth-err')" oninput="onDateInput(event)"
-          oncompositionend="onDateCompositionEnd(event)">
+          onkeydown="onDateKeydown(event,'addFam','fam-birth-err')" oninput="onDateInput(this)">
       </div>
       <button class="btn btn-success btn-sm" onclick="addFam()">${jp?'追加':'추가'}</button>
       <div></div>
@@ -311,17 +308,8 @@ function onDateBlur(input, errId) {
   validateDateText(input, errId, input.dataset.required === '1');
 }
 
-function toDateHalf(v) {
-  // 전각 숫자(０-９) → 반각(0-9) 변환
-  return v.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFF10 + 0x30));
-}
-
-function onDateInput(event) {
-  // IME 조합 중에는 건너뜀 — compositionend에서 처리
-  if (event.isComposing) return;
-  const input = event.target;
-  const half = toDateHalf(input.value);
-  const digits = half.replace(/\D/g, '');
+function onDateInput(input) {
+  const digits = input.value.replace(/\D/g, '');
   if (digits.length >= 8) {
     input.value = normalizeDateInput(digits);
   } else if (digits.length > 0 && !/[YMD]/.test(input.value)) {
@@ -329,30 +317,6 @@ function onDateInput(event) {
   }
   clearDateErrorForInput(input);
   markDirty();
-}
-
-function onDateCompositionEnd(event) {
-  const input = event.target;
-  const digits = toDateHalf(input.value).replace(/[^0-9]/g, '').slice(0, 8);
-  if (digits.length === 8) {
-    input.value = normalizeDateInput(digits);
-  } else if (digits.length > 0) {
-    input.value = formatDateDigits(digits);
-    requestAnimationFrame(() => setDateCaret(input, DATE_SLOT_IDX[digits.length]));
-  } else {
-    input.value = DATE_MASK;
-    requestAnimationFrame(() => setDateCaret(input, DATE_SLOT_IDX[0]));
-  }
-  clearDateErrorForInput(input);
-  markDirty();
-  // Enter로 조합이 확정된 경우 → 다음 필드로 자동 이동
-  if (input._pendingAdvance) {
-    const { nextId, errId } = input._pendingAdvance;
-    delete input._pendingAdvance;
-    requestAnimationFrame(() => {
-      if (!tryAdvanceDateField(input, nextId, errId)) input.focus();
-    });
-  }
 }
 
 function handleDateDigit(input, digit) {
@@ -439,11 +403,6 @@ function onDateKeydown(event, nextId, errId) {
   const input = event.target;
 
   if (event.key === 'Enter') {
-    if (event.isComposing) {
-      // 전각 조합 중 Enter: 플래그 저장 후 브라우저가 compositionend 발생시키도록 리턴
-      input._pendingAdvance = { nextId, errId };
-      return;
-    }
     event.preventDefault();
     if (!tryAdvanceDateField(input, nextId, errId)) {
       input.focus();
