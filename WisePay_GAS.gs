@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-22 19:50 — doPost importPayrolls 핸들러 추가 (앱 CSV 업로드 수신)
+// 수정: 2026-05-24 13:03 — doPost employees 핸들러 추가 (사원 저장 시 즉시 구글 시트 반영)
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -47,6 +47,12 @@ function doPost(e) {
       if (data.payrolls)    saveSheet(SHEET_PAY,  data.payrolls);
       if (data.rateHistory) saveSheet(SHEET_RATE, data.rateHistory);
       return jsonResponse({ ok: true });
+    }
+    if (data.type === 'employees') {
+      if (data.employees && data.employees.length > 0) {
+        saveSheet(SHEET_EMP, data.employees);
+      }
+      return jsonResponse({ ok: true, count: (data.employees || []).length });
     }
     if (data.type === 'importPayrolls') {
       const incoming = data.payrolls || [];
