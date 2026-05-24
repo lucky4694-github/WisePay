@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-23 07:09 — 부양가족 자동 계산 반영, '사원' 변경
+﻿// 수정: 2026-05-24 12:36 — 부양가족 생년월일 엔터 후 이름 필드로 포커스 이동
 'use strict';
 function renderEmpList() {
   const body=document.getElementById('empListBody');
@@ -561,6 +561,7 @@ function addFam() {
   document.getElementById('fam-name').value='';
   document.getElementById('fam-birth').value='';
   renderFamTable(); updateFamCount();
+  document.getElementById('fam-name').focus();
 }
 
 function removeFam(i) { tempFamilies.splice(i,1); renderFamTable(); updateFamCount(); }
