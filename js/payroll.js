@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-23 10:37 — rate-month-banner: 최신 이력보다 이후 달일 때만 표시
+﻿// 수정: 2026-05-24 12:59 — 사원 드롭다운 형식: 사원번호 이름
 'use strict';
 function renderMonthTabs() {
   const c = document.getElementById('monthTabs');
@@ -69,7 +69,7 @@ function renderEmpSelect() {
   employees.forEach((e,i) => {
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = `${e.name}（${String(e.no).padStart(4,'0')}）`;
+    opt.textContent = `${String(e.no).padStart(4,'0')} ${e.name}`;
     sel.appendChild(opt);
   });
   // currentEmpIdx가 유효하면 선택 유지, 아니면 미선택

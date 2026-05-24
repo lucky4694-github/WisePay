@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-24 13:12 — 날짜 입력란 포커스 시 IME 반각 강제, 해제 시 이전 모드 복원
+﻿// 수정: 2026-05-24 12:59 — 날짜 전각 입력 자동 반각 변환(compositionend), 드롭다운 사원번호+이름 형식
 'use strict';
 function renderEmpList() {
   const body=document.getElementById('empListBody');
@@ -143,7 +143,8 @@ function renderEmpFormFields(emp) {
       <input class="form-input" id="f-join" type="text" value="${normalizeDate(v('join'))}"
         placeholder="YYYY-MM-DD" autocomplete="off" data-required="1"
         onfocus="onDateFocus(this)" onblur="onDateBlur(this,'f-join-err')"
-        onkeydown="onDateKeydown(event,'f-birth','f-join-err')" oninput="onDateInput(this)">
+        onkeydown="onDateKeydown(event,'f-birth','f-join-err')" oninput="onDateInput(this)"
+        oncompositionend="onDateCompositionEnd(event)">
     </div>
     <div class="form-group">
       <div class="form-label-block">
@@ -155,7 +156,8 @@ function renderEmpFormFields(emp) {
       <input class="form-input" id="f-birth" type="text" value="${normalizeDate(v('birth'))}"
         placeholder="YYYY-MM-DD" autocomplete="off" data-required="1"
         onfocus="onDateFocus(this)" onblur="onDateBlur(this,'f-birth-err')"
-        onkeydown="onDateKeydown(event,'f-kaigo','f-birth-err')" oninput="onDateInput(this)">
+        onkeydown="onDateKeydown(event,'f-kaigo','f-birth-err')" oninput="onDateInput(this)"
+        oncompositionend="onDateCompositionEnd(event)">
     </div>
     <div class="form-group">
       <div class="form-label-block">
@@ -233,7 +235,8 @@ function renderEmpFormFields(emp) {
         <input class="form-input" id="fam-birth" type="text"
           placeholder="YYYY-MM-DD" autocomplete="off"
           onfocus="onDateFocus(this)" onblur="onDateBlur(this,'fam-birth-err')"
-          onkeydown="onDateKeydown(event,'addFam','fam-birth-err')" oninput="onDateInput(this)">
+          onkeydown="onDateKeydown(event,'addFam','fam-birth-err')" oninput="onDateInput(this)"
+          oncompositionend="onDateCompositionEnd(event)">
       </div>
       <button class="btn btn-success btn-sm" onclick="addFam()">${jp?'追加':'추가'}</button>
       <div></div>
@@ -293,10 +296,6 @@ function clearDateErrorForInput(input) {
 }
 
 function onDateFocus(input) {
-  // 포커스 시 IME 모드 저장 후 반각(직접 입력) 강제
-  input._prevImeMode = input.style.imeMode;
-  input.style.imeMode = 'disabled';
-
   const norm = normalizeDateInput(input.value);
   if (norm) {
     input.value = norm;
@@ -318,20 +317,39 @@ function finalizeDateInput(input) {
 }
 
 function onDateBlur(input, errId) {
-  // 포커스 해제 시 이전 IME 모드로 복원
-  input.style.imeMode = input._prevImeMode !== undefined ? input._prevImeMode : '';
-  delete input._prevImeMode;
-
   finalizeDateInput(input);
   validateDateText(input, errId, input.dataset.required === '1');
 }
 
+function toDateHalf(v) {
+  // 전각 숫자(０-９) → 반각(0-9) 변환
+  return v.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFF10 + 0x30));
+}
+
 function onDateInput(input) {
-  const digits = input.value.replace(/\D/g, '');
+  const half = toDateHalf(input.value);
+  const digits = half.replace(/\D/g, '');
   if (digits.length >= 8) {
     input.value = normalizeDateInput(digits);
   } else if (digits.length > 0 && !/[YMD]/.test(input.value)) {
     input.value = formatDateDigits(digits);
+  }
+  clearDateErrorForInput(input);
+  markDirty();
+}
+
+function onDateCompositionEnd(event) {
+  // IME 전각 입력 확정 시 반각으로 변환하여 날짜 마스크에 반영
+  const input = event.target;
+  const digits = toDateHalf(input.value).replace(/[^0-9]/g, '').slice(0, 8);
+  if (digits.length === 8) {
+    input.value = normalizeDateInput(digits);
+  } else if (digits.length > 0) {
+    input.value = formatDateDigits(digits);
+    requestAnimationFrame(() => setDateCaret(input, DATE_SLOT_IDX[digits.length]));
+  } else {
+    input.value = DATE_MASK;
+    requestAnimationFrame(() => setDateCaret(input, DATE_SLOT_IDX[0]));
   }
   clearDateErrorForInput(input);
   markDirty();

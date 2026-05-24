@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-23 08:30 — renderHistory 기간별 요율 적용, calcShotoku fuyou/isOtsu 누락 수정
+﻿// 수정: 2026-05-24 12:59 — 사원 드롭다운 형식: 사원번호 이름
 'use strict';
 function buildAnnualEmpSel() {
   const sel = document.getElementById('annualEmpSel');
@@ -147,7 +147,7 @@ function buildHistEmpSel() {
   const sel=document.getElementById('histEmpSel');
   if(!sel) return;
   sel.innerHTML=`<option value="all">${LANG==='JP'?'全員':'전체'}</option>`;
-  employees.forEach((e,i)=>{ if(!e||e.no==null) return; const o=document.createElement('option'); o.value=i; o.textContent=`${e.name}（${String(e.no).padStart(4,'0')}）`; sel.appendChild(o); });
+  employees.forEach((e,i)=>{ if(!e||e.no==null) return; const o=document.createElement('option'); o.value=i; o.textContent=`${String(e.no).padStart(4,'0')} ${e.name}`; sel.appendChild(o); });
 }
 
 function renderHistory() {
