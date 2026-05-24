@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-24 12:36 — 부양가족 생년월일 엔터 후 이름 필드로 포커스 이동
+﻿// 수정: 2026-05-24 12:48 — 날짜 일 한 자리 입력 후 엔터 시 0 패딩 자동 완성
 'use strict';
 function renderEmpList() {
   const body=document.getElementById('empListBody');
@@ -391,6 +391,11 @@ function tryAdvanceDateField(input, nextId, errId) {
     input.value = '';
     clearFieldError(errId, input.id);
   } else {
+    // 일 첫 자리만 입력된 경우(7자리) → 0 패딩으로 완성 (예: 1→01, 2→02, 3→03)
+    const d7 = dateDigitsFromValue(input.value);
+    if (d7.length === 7) {
+      input.value = normalizeDateInput(d7.slice(0, 6) + '0' + d7[6]) || input.value;
+    }
     const norm = normalizeDateInput(input.value);
     if (norm) input.value = norm;
     if (!validateDateText(input, errId)) return false;
