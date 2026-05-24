@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-24 13:50 — 사원 선택 드롭다운 텍스트 변경
+﻿// 수정: 2026-05-24 19:56 — r-hyo 표준보수월액 수동 지정: 0이면 자동계산, 양수면 우선 사용
 'use strict';
 function renderMonthTabs() {
   const c = document.getElementById('monthTabs');
@@ -231,8 +231,9 @@ function recalc() {
   const emp = employees[currentEmpIdx];
   const base=pv('r-base'),ot=pv('r-ot'),kintai=pv('r-kintai'),commute=pv('r-commute'),commutetax=pv('r-commutetax'),kinmu=pv('r-kinmu'),shokumu=pv('r-shokumu'),field=pv('r-field'),jumin=pv('k-jumin'),nencho=pv('k-nencho');
   const totalPay = base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
-  // 標準報酬月額：残業手当(ot)は変動給のため除外
-  const hyo = emp ? getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field) : 58000;
+  // 標準報酬月額：r-hyoが0より大きければ手動値を優先（随時改定・資格取得時の実際の等級）
+  const hyo_override = pv('r-hyo');
+  const hyo = hyo_override > 0 ? hyo_override : (emp ? getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field) : 58000);
   const kenko=Math.floor(hyo*rates.kenko/100/2);
   const kaigo=emp&&isKaigo(emp)?Math.floor(hyo*rates.kaigo/100/2):0;
   const kodomo=Math.floor(hyo*rates.kodomo/100/2);

@@ -61,6 +61,7 @@ function applyLang() {
   setTxt('t-r-kinmu', '勤務手当', '근무수당');
   setTxt('t-r-shokumu', '職務手当', '직무수당');
   setTxt('t-r-field', '現場手当', '현장수당');
+  setHtml('t-r-hyo', '標準報酬月額<br>（手動指定・任意）', '표준보수월액<br>（수동지정・선택）');
   setTxt('t-r-total', '計', '합계');
 
   setTxt('t-k-kenko', '健康保険料', '건강보험료');

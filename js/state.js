@@ -1,5 +1,5 @@
 ﻿'use strict';
-// 수정: 2026-05-24 18:18 — 참조만, 실제 수정은 app.js·history.js
+// 수정: 2026-05-24 19:56 — PFIELDS에 r-hyo 추가
 let LANG = 'KR';
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth() + 1;
@@ -30,5 +30,5 @@ const LS = { emp:'kyuyo_emp', rates:'kyuyo_rates', rateHistory:'kyuyo_rate_histo
 let payrollDirty = false; // 급여명세 미저장 여부
 let _pendingScrapedRates = null; // 스크래핑 결과 임시 보관
 
-const PFIELDS = ['r-base','r-ot','r-kintai','r-commute','r-commutetax','r-kinmu','r-shokumu','r-field','k-jumin','k-nencho'];
+const PFIELDS = ['r-base','r-ot','r-kintai','r-commute','r-commutetax','r-kinmu','r-shokumu','r-field','r-hyo','k-jumin','k-nencho'];
 

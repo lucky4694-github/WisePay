@@ -1,6 +1,6 @@
 <!-- ================================================
   WisePay (給与Pro by Wisewires)
-  수정: 2026-05-24 18:35 — tax-tables.js: 소득세 甲欄 b-12000 차감 제거 + history.js: buildAnnualYearSel 언어 대응
+  수정: 2026-05-24 19:56 — tax-tables.js T0[302000] 수정 + r-hyo 표준보수월액 수동지정 필드 추가
 ================================================ -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -193,7 +193,8 @@
         <div class="row"><span class="row-label" id="t-r-commutetax">課税通勤手当</span><input class="row-input" id="r-commutetax" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-kinmu')"></div>
         <div class="row"><span class="row-label" id="t-r-kinmu">勤務手当</span><input class="row-input" id="r-kinmu" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-shokumu')"></div>
         <div class="row"><span class="row-label" id="t-r-shokumu">職務手当</span><input class="row-input" id="r-shokumu" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-field')"></div>
-        <div class="row"><span class="row-label" id="t-r-field">現場手当</span><input class="row-input" id="r-field" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'k-jumin')"></div>
+        <div class="row"><span class="row-label" id="t-r-field">現場手当</span><input class="row-input" id="r-field" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-hyo')"></div>
+        <div class="row" style="background:var(--accent2);border-radius:var(--r2);"><span class="row-label" id="t-r-hyo" style="font-size:11px;color:var(--text2);">標準報酬月額<br>（手動指定・任意）</span><input class="row-input" id="r-hyo" placeholder="0=自動" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'k-jumin')" style="font-style:italic;"></div>
         <div class="row row-total"><span class="row-label" id="t-r-total">計</span><span class="row-val" id="shikyuuTotal">0</span></div>
       </div>
     </div>

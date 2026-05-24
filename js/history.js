@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-24 18:35 — buildAnnualYearSel 추가: 연도 드롭다운 언어 대응 (년도/年度)
+﻿// 수정: 2026-05-24 19:56 — calcMonthData·renderHistory: r-hyo 수동 표준보수월액 우선 사용
 'use strict';
 function buildAnnualYearSel() {
   const sel = document.getElementById('annualYearSel');
@@ -47,7 +47,8 @@ function calcMonthData(emp, year, month) {
     const shokumu=safeInt(d['r-shokumu']), field=safeInt(d['r-field']);
     const jumin=safeInt(d['k-jumin']), nencho=safeInt(d['k-nencho']);
     const totalPay = base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
-    const hyo = getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field);
+    const hyo_override = safeInt(d['r-hyo']);
+    const hyo = hyo_override > 0 ? hyo_override : getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field);
     // 해당 월의 정확한 요율 사용
     const r = getRatesForYM(year, month);
     const kenko=Math.floor(hyo*r.kenko/100/2);
@@ -209,8 +210,8 @@ function renderHistory() {
   rows.forEach(({m,emp,d})=>{
     const base=safeInt(d['r-base']),ot=safeInt(d['r-ot']),kintai=safeInt(d['r-kintai']),commute=safeInt(d['r-commute']),commutetax=safeInt(d['r-commutetax']),kinmu=safeInt(d['r-kinmu']),shokumu=safeInt(d['r-shokumu']),field=safeInt(d['r-field']);
     const totalPay=base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
-    // 標準報酬月額：残業手当(ot)は変動給のため除外
-    const hyo=getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field);
+    const hyo_override=safeInt(d['r-hyo']);
+    const hyo=hyo_override>0?hyo_override:getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field);
     const r=getRatesForYM(year,m);
     const kenko=Math.floor(hyo*r.kenko/100/2);
     const kaigo2=isKaigo(emp)?Math.floor(hyo*r.kaigo/100/2):0;
