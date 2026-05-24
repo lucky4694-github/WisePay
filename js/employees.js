@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-24 14:17 — IME Enter: preventDefault를 isComposing 체크 이후로 이동 (조합 확정 막힘 버그)
+﻿// 수정: 2026-05-24 14:26 — IME _pendingAdvance로 전각 Enter 처리, 통근수당 제거, 페이지 이동 경고
 'use strict';
 function renderEmpList() {
   const body=document.getElementById('empListBody');
@@ -204,16 +204,6 @@ function renderEmpFormFields(emp) {
         ${[0,1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${(emp ? countFamilies(emp) : 0)===n?'selected':''}>${n}${jp?'人':'명'}</option>`).join('')}
       </select>
     </div>
-    <div class="form-group">
-      <div class="form-label-block">
-        <div class="form-label-row">
-          <label class="form-label">${jp?'通勤手当（月額・定期券）':'통근수당（월액・정기권）'}</label>
-        </div>
-        <div class="form-label-hint">${jp?'毎月の給与に自動反映されます':'매월 급여에 자동 반영됩니다'}</div>
-      </div>
-      <input class="form-input" id="f-commute" type="number" value="${v('commute',0)}"
-        oninput="markDirty()">
-    </div>
   </div>
 
   <div class="fam-section">
@@ -342,7 +332,6 @@ function onDateInput(event) {
 }
 
 function onDateCompositionEnd(event) {
-  // IME 전각 입력 확정 시 반각으로 변환하여 날짜 마스크에 반영
   const input = event.target;
   const digits = toDateHalf(input.value).replace(/[^0-9]/g, '').slice(0, 8);
   if (digits.length === 8) {
@@ -356,6 +345,14 @@ function onDateCompositionEnd(event) {
   }
   clearDateErrorForInput(input);
   markDirty();
+  // Enter로 조합이 확정된 경우 → 다음 필드로 자동 이동
+  if (input._pendingAdvance) {
+    const { nextId, errId } = input._pendingAdvance;
+    delete input._pendingAdvance;
+    requestAnimationFrame(() => {
+      if (!tryAdvanceDateField(input, nextId, errId)) input.focus();
+    });
+  }
 }
 
 function handleDateDigit(input, digit) {
@@ -442,8 +439,11 @@ function onDateKeydown(event, nextId, errId) {
   const input = event.target;
 
   if (event.key === 'Enter') {
-    // IME 확정 중 Enter는 preventDefault 없이 리턴 → 브라우저가 조합을 정상 커밋
-    if (event.isComposing) return;
+    if (event.isComposing) {
+      // 전각 조합 중 Enter: 플래그 저장 후 브라우저가 compositionend 발생시키도록 리턴
+      input._pendingAdvance = { nextId, errId };
+      return;
+    }
     event.preventDefault();
     if (!tryAdvanceDateField(input, nextId, errId)) {
       input.focus();
@@ -672,7 +672,6 @@ function saveEmployee() {
     shotokuKbn: document.getElementById('f-shotoku-kbn')?.value||'ko',
     fuyouCount: parseInt(document.getElementById('f-fuyou')?.value)||0,
     base: 0,
-    commute: parseInt(document.getElementById('f-commute')?.value)||0,
     families: [...tempFamilies],
   };
 

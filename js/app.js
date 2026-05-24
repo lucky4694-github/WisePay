@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-23 10:37 — migrateRateHistory: 2026-01 잘못된 항목 제거
+﻿// 수정: 2026-05-24 14:26 — 사원 편집 중 페이지 이동 경고 추가, beforeunload empFormDirty 포함
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -102,15 +102,21 @@ function initApp() {
 
 // 페이지 닫기/새로고침 시 미저장 경고
 window.addEventListener('beforeunload', e => {
-  if(payrollDirty) {
+  if(payrollDirty || empFormDirty) {
     e.preventDefault();
     e.returnValue = '';
   }
 });
 
 function gotoPage(id, el) {
-  // 급여명세에서 다른 페이지로 이동 시 미저장 경고
   const currentPage = document.querySelector('.page.active')?.id;
+  // 사원 편집 중 다른 페이지로 이동 시 경고
+  if(currentPage === 'page-employees' && id !== 'employees' && empFormDirty) {
+    const jp = LANG==='JP';
+    if(!confirm(jp?'保存されていない従業員情報があります。このまま移動しますか？':'저장되지 않은 사원 정보가 있습니다. 이동하시겠습니까?')) return;
+    empFormDirty = false;
+  }
+  // 급여명세에서 다른 페이지로 이동 시 미저장 경고
   if(currentPage === 'page-payroll' && id !== 'payroll' && payrollDirty) {
     const jp = LANG==='JP';
     const msg = jp
