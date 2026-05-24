@@ -1,4 +1,4 @@
-// 수정: 2026-05-24 13:40 — 급여 CSV 함수 주석에서 freee 제거
+// 수정: 2026-05-24 14:10 — exportAllToGas 급여 키 패딩 버그 수정
 'use strict';
 async function exportAllToGas() {
   if (!gasUrl) {
@@ -15,9 +15,10 @@ async function exportAllToGas() {
 
   const payrolls = [];
   employees.forEach(emp => {
+    const pNo = String(emp.no).padStart(4, '0');
     for (let y = 2024; y <= 2027; y++) {
       for (let m = 1; m <= 12; m++) {
-        const s = localStorage.getItem('kyuyo_p_' + emp.no + '_' + y + '_' + m);
+        const s = localStorage.getItem('kyuyo_p_' + pNo + '_' + y + '_' + m);
         if (s) {
           try {
             const d = JSON.parse(s);
@@ -86,9 +87,10 @@ function collectAllPayrolls() {
   const result = [];
 
   employees.forEach(emp => {
+    const pNo = String(emp.no).padStart(4, '0');
     for (let y = 2024; y <= 2030; y++) {
       for (let m = 1; m <= 12; m++) {
-        const key = `kyuyo_p_${emp.no}_${y}_${m}`;
+        const key = `kyuyo_p_${pNo}_${y}_${m}`;
         const saved = localStorage.getItem(key);
 
         if (saved) {

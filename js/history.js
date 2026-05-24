@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-24 13:50 — buildAnnualEmpSel 첫 유효 인덱스 사용, renderAnnual 공백 방지
+﻿// 수정: 2026-05-24 14:10 — renderAnnual 데이터 있는 마지막 월까지만 표시
 'use strict';
 function buildAnnualEmpSel() {
   const sel = document.getElementById('annualEmpSel');
@@ -97,24 +97,30 @@ function renderAnnual() {
     return;
   }
 
-  // 합계
+  // 데이터 있는 마지막 월까지만 표시
+  let lastDataMonth = 0;
+  for(let m = 1; m <= 12; m++) { if(monthData[m-1] !== null) lastDataMonth = m; }
+  const showMonths = lastDataMonth;
+  const cols = `grid-template-columns:100px repeat(${showMonths},1fr);`;
+
+  // 합계 (표시 범위 내에서만)
   const totals = {};
   rows.forEach(r => {
-    totals[r.key] = monthData.reduce((s,d) => s+(d?d[r.key]:0), 0);
+    totals[r.key] = monthData.slice(0, showMonths).reduce((s,d) => s+(d?d[r.key]:0), 0);
   });
 
   let html = `<div class="annual-wrap">`;
   // 헤더
-  html += `<div class="annual-head-row"><div>${jp?'項目':'항목'}</div>`;
-  for(let m=1;m<=12;m++) html += `<div>${m}${mu}</div>`;
+  html += `<div class="annual-head-row" style="${cols}"><div>${jp?'項目':'항목'}</div>`;
+  for(let m=1;m<=showMonths;m++) html += `<div>${m}${mu}</div>`;
   html += `</div>`;
 
   // 데이터 행
   rows.forEach(r => {
     const isBold = r.key==='net'||r.key==='totalPay';
-    html += `<div class="annual-data-row${r.key==='net'?' total-row':''}">`;
+    html += `<div class="annual-data-row${r.key==='net'?' total-row':''}" style="${cols}">`;
     html += `<div style="${isBold?'font-weight:600;':''}">${r.label}</div>`;
-    for(let m=0;m<12;m++) {
+    for(let m=0;m<showMonths;m++) {
       const d = monthData[m];
       if(d) {
         const val = d[r.key];
@@ -128,9 +134,9 @@ function renderAnnual() {
   });
 
   // 합계 행
-  html += `<div class="annual-data-row total-row">`;
+  html += `<div class="annual-data-row total-row" style="${cols}">`;
   html += `<div>${jp?'年計':'연계'}</div>`;
-  for(let m=0;m<12;m++) {
+  for(let m=0;m<showMonths;m++) {
     html += monthData[m]
       ? `<div style="color:var(--accent);font-weight:600;">${fmt(monthData[m].net)}</div>`
       : `<div class="annual-no-data">-</div>`;

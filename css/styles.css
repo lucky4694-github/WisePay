@@ -196,10 +196,10 @@ body{font-family:'Noto Sans JP','Noto Sans KR',sans-serif;background:var(--bg);c
 
 /* ANNUAL PRINT PAGE */
 .annual-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);}
-.annual-head-row{display:grid;grid-template-columns:60px repeat(12,1fr);font-size:10px;font-weight:600;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border);}
+.annual-head-row{display:grid;font-size:10px;font-weight:600;color:var(--text3);background:var(--surface2);border-bottom:1px solid var(--border);}
 .annual-head-row div{padding:6px 4px;text-align:right;border-right:1px solid var(--border2);}
 .annual-head-row div:first-child{text-align:left;}
-.annual-data-row{display:grid;grid-template-columns:60px repeat(12,1fr);font-size:11px;border-bottom:1px solid var(--border2);}
+.annual-data-row{display:grid;font-size:11px;border-bottom:1px solid var(--border2);}
 .annual-data-row:hover{background:var(--accent2);}
 .annual-data-row div{padding:5px 4px;text-align:right;border-right:1px solid var(--border2);white-space:nowrap;}
 .annual-data-row div:first-child{text-align:left;color:var(--text2);font-weight:500;}
