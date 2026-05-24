@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-24 14:10 — renderAnnual 데이터 있는 마지막 월까지만 표시
+﻿// 수정: 2026-05-24 14:20 — calcMonthData GAS 숫자값 처리 버그 수정
 'use strict';
 function buildAnnualEmpSel() {
   const sel = document.getElementById('annualEmpSel');
@@ -16,17 +16,20 @@ function buildAnnualEmpSel() {
   sel.value = (prev !== '' && employees[parseInt(prev)]) ? prev : firstVal;
 }
 
+// GAS import 시 숫자값으로 저장될 수 있으므로 string/number 모두 처리
+function safeInt(v) { return parseInt(String(v == null ? '0' : v).replace(/,/g, '')) || 0; }
+
 function calcMonthData(emp, year, month) {
   const key = `kyuyo_p_${String(emp.no).padStart(4,'0')}_${year}_${month}`;
   const s = localStorage.getItem(key);
   if(!s) return null;
   try {
     const d = JSON.parse(s);
-    const base=parseInt((d['r-base']||'0').replace(/,/g,'')), ot=parseInt((d['r-ot']||'0').replace(/,/g,'')), kintai=parseInt((d['r-kintai']||'0').replace(/,/g,''));
-    const commute=parseInt((d['r-commute']||'0').replace(/,/g,'')), commutetax=parseInt((d['r-commutetax']||'0').replace(/,/g,''));
-    const kinmu=parseInt((d['r-kinmu']||'0').replace(/,/g,''));
-    const shokumu=parseInt((d['r-shokumu']||'0').replace(/,/g,'')), field=parseInt((d['r-field']||'0').replace(/,/g,''));
-    const jumin=parseInt((d['k-jumin']||'0').replace(/,/g,'')), nencho=parseInt((d['k-nencho']||'0').replace(/,/g,''));
+    const base=safeInt(d['r-base']), ot=safeInt(d['r-ot']), kintai=safeInt(d['r-kintai']);
+    const commute=safeInt(d['r-commute']), commutetax=safeInt(d['r-commutetax']);
+    const kinmu=safeInt(d['r-kinmu']);
+    const shokumu=safeInt(d['r-shokumu']), field=safeInt(d['r-field']);
+    const jumin=safeInt(d['k-jumin']), nencho=safeInt(d['k-nencho']);
     const totalPay = base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
     const hyo = getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field);
     // 해당 월의 정확한 요율 사용
@@ -179,7 +182,7 @@ function renderHistory() {
   });
   if(!rows.length){ tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:25px;color:var(--text3);">${LANG==='JP'?'データがありません':'데이터 없음'}</td></tr>`; return; }
   rows.forEach(({m,emp,d})=>{
-    const base=parseInt(d['r-base']||0),ot=parseInt(d['r-ot']||0),kintai=parseInt(d['r-kintai']||0),commute=parseInt(d['r-commute']||0),commutetax=parseInt(d['r-commutetax']||0),kinmu=parseInt(d['r-kinmu']||0),shokumu=parseInt(d['r-shokumu']||0),field=parseInt(d['r-field']||0);
+    const base=safeInt(d['r-base']),ot=safeInt(d['r-ot']),kintai=safeInt(d['r-kintai']),commute=safeInt(d['r-commute']),commutetax=safeInt(d['r-commutetax']),kinmu=safeInt(d['r-kinmu']),shokumu=safeInt(d['r-shokumu']),field=safeInt(d['r-field']);
     const totalPay=base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
     // 標準報酬月額：残業手当(ot)は変動給のため除外
     const hyo=getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field);
@@ -193,7 +196,7 @@ function renderHistory() {
     const fuyou=parseInt(emp.fuyouCount)||0;
     const isOtsu=(emp.shotokuKbn||'ko')==='otsu';
     const shotoku=Math.max(0,calcShotoku(totalPay-commute-shakai,fuyou,isOtsu));
-    const jumin=parseInt(d['k-jumin']||0),nencho=parseInt(d['k-nencho']||0);
+    const jumin=safeInt(d['k-jumin']),nencho=safeInt(d['k-nencho']);
     const totalKojo=shakai+shotoku+jumin+nencho;
     const net=totalPay-totalKojo;
     const mu=LANG==='JP'?'月':'월';
