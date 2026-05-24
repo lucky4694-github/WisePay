@@ -1,4 +1,4 @@
-// 수정: 2026-05-24 18:18 — migrateRateHistory: 2024/2025 kenko·kaigo 기존 오류값 강제 교정 + 연간 일람 전년12월~당년11월 대응
+// 수정: 2026-05-24 18:35 — buildAnnualYearSel 추가: 연간 일람 연도 드롭다운 언어 대응 (년도/年度)
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -99,7 +99,7 @@ function initApp() {
   checkRateBanner();
   updateGasStatus();
   try { buildHistEmpSel(); } catch(e) {}
-  try { buildAnnualEmpSel(); } catch(e) {}
+  try { buildAnnualYearSel(); buildAnnualEmpSel(); } catch(e) {}
   setTimeout(() => onMonthYearChange(), 100);
   // 로그인 후 Google 시트에서 최신 데이터 자동 로드
   autoLoadFromGas();
@@ -150,7 +150,7 @@ function gotoPage(id, el) {
   if(id==='history') { try { buildHistEmpSel(); renderHistory(); } catch(e) { console.error('history render error:', e); } }
   if(id==='employees') renderEmpList();
   if(id==='rates') renderRatesPage();
-  if(id==='annual') { try { buildAnnualEmpSel(); renderAnnual(); } catch(e) { console.error('annual render error:', e); } }
+  if(id==='annual') { try { buildAnnualYearSel(); buildAnnualEmpSel(); renderAnnual(); } catch(e) { console.error('annual render error:', e); } }
   if(id==='gas') openGasModal();
 }
 

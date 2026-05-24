@@ -1,5 +1,21 @@
-﻿// 수정: 2026-05-24 18:18 — renderAnnual 익월지급 대응: 전년12월~당년11월 표시 + 연도 드롭다운 年度 표기
+﻿// 수정: 2026-05-24 18:35 — buildAnnualYearSel 추가: 연도 드롭다운 언어 대응 (년도/年度)
 'use strict';
+function buildAnnualYearSel() {
+  const sel = document.getElementById('annualYearSel');
+  if(!sel) return;
+  const jp = LANG === 'JP';
+  const prev = sel.value;
+  const years = [2026, 2025, 2024];
+  sel.innerHTML = '';
+  years.forEach(y => {
+    const o = document.createElement('option');
+    o.value = y;
+    o.textContent = jp ? `${y}年度` : `${y}년도`;
+    sel.appendChild(o);
+  });
+  if(years.map(String).includes(prev)) sel.value = prev;
+}
+
 function buildAnnualEmpSel() {
   const sel = document.getElementById('annualEmpSel');
   if (!sel) return;

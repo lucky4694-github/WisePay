@@ -1,4 +1,5 @@
-﻿'use strict';
+﻿// 수정: 2026-05-24 18:35 — calcShotoku 甲欄: b-12000 잘못된 차감 제거 → 과세기준 직접 조회 (국세청 월액표 정합)
+'use strict';
 function getHyo(s) {
   // 協会けんぽ 標準報酬月額 等級表 - 正確な下限境界値
   // [下限(以上), 月額]
@@ -81,9 +82,8 @@ function calcShotoku(b, fuyou, isOtsu) {
     return 0;
   }
   if(isOtsu) return lookup(TZ, b);
-  const X = b - 12000;
-  if(X < 88000) return 0;
-  const val0 = lookup(T0, X);
+  // 甲欄: 사회보험료 공제 후 금액(b)을 月額表에 직접 조회 (国税庁 令和6年分)
+  const val0 = lookup(T0, b);
   const n = Math.min(Math.max(parseInt(fuyou)||0,0),7);
   return Math.max(0, val0 - n*1610);
 }
