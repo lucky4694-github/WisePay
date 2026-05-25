@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-25 23:05 — 데이터 없는 월 빈 화면 + 로드 시 천 단위 콤마 표시
+﻿// 수정: 2026-05-25 23:12 — 전 입력 0이면 공제·차인지급액도 0으로 표시 (빈 폼 상태)
 'use strict';
 function renderMonthTabs() {
   const c = document.getElementById('monthTabs');
@@ -216,6 +216,21 @@ function recalc() {
   const totalPay = base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
   // 標準報酬月額：r-hyoが0より大きければ手動値を優先（随時改定・資格取得時の実際の等級）
   const hyo_override = pv('r-hyo');
+
+  // 모든 입력이 0이면 공제 계산 없이 전부 0 표시 (빈 폼 상태)
+  if(totalPay === 0 && hyo_override === 0 && jumin === 0 && nencho === 0) {
+    ['shikyuuTotal','k-kenko','k-kaigo','k-kodomo','k-nenkin','k-koyo','k-shotoku','kojoTotal'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.textContent='0';
+    });
+    const kagEl=document.getElementById('k-kaigo'); if(kagEl) kagEl.className='row-val zero';
+    const koyoEl=document.getElementById('k-koyo'); if(koyoEl){ koyoEl.style.color=''; koyoEl.style.textDecoration=''; }
+    ['totalPayTxt','totalKojoTxt'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent='¥0'; });
+    const netEl=document.getElementById('netAmountTxt'); if(netEl) netEl.textContent='¥0';
+    ['ci-kenko','ci-nenkin','ci-koyo','ci-shotoku'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent='-'; });
+    const de=document.getElementById('netDiffTxt'); if(de){ de.textContent=' '; de.className='net-diff'; }
+    window._calc={kenko:0,nenkin:0,shotoku:0,totalPay:0,totalKojo:0,net:0};
+    return;
+  }
   const hyo = hyo_override > 0 ? hyo_override : (emp ? getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field) : 58000);
   // 사회보험 가입 전월 면제: shaho_start(YYYY-MM) 이전 월은 전 사회보험 0, 소득세만 적용
   const shahoParts = emp && emp.shaho_start ? emp.shaho_start.split('-') : null;
