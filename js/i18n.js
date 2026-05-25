@@ -47,6 +47,7 @@ function applyLang() {
   setTxt('t-langbtn', '한국어로 전환', '日本語に切替');
   setTxt('t-ai-btn', '協会けんぽ 最新料率を取得', '협회건포 최신 요율 가져오기');
   setTxt('t-save-btn', '保存', '저장');
+  setTxt('t-del-month-btn', 'この月を削除', '이 월 삭제');
   setTxt('t-print-btn', '印刷', '인쇄');
 
   setTxt('t-net-label', '差引総支給額（手取り）', '차인지급액');

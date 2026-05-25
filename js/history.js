@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-25 17:51 — 임금대장: 지급·공제 항목 필터 제거(전 사원 레이아웃 통일)
+﻿// 수정: 2026-05-25 18:00 — 임금대장: 전년12월 헤더 줄바꿈 개선
 'use strict';
 function buildAnnualYearSel() {
   const sel = document.getElementById('annualYearSel');
@@ -159,7 +159,7 @@ function renderAnnual() {
   html += `<div class="annual-head-row" style="${cols}"><div>${jp?'項目':'항목'}</div>`;
   for(let i=0;i<showCount;i++) {
     const {year:y,month:m} = fiscalMonths[i];
-    html += `<div>${(m===12&&y===year-1)?(jp?`前年${m}${mu}`:`전년${m}${mu}`):`${m}${mu}`}</div>`;
+    html += `<div>${(m===12&&y===year-1)?(jp?`前年<br>12${mu}`:`전년<br>12${mu}`):`${m}${mu}`}</div>`;
   }
   html += `<div>${jp?'年計':'연계'}</div></div>`;
 

@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-25 17:16 — 전월대비: 1월은 전년 12월과 비교 + 데이터 없을 때 공란 유지(레이아웃 고정)
+﻿// 수정: 2026-05-25 18:00 — 이 월 삭제(deleteCurrentMonth) 기능 추가
 'use strict';
 function renderMonthTabs() {
   const c = document.getElementById('monthTabs');
@@ -294,6 +294,24 @@ function recalc() {
     else { de.textContent=' '; de.className='net-diff'; }
   }
   window._calc = {kenko,nenkin,shotoku,totalPay,totalKojo,net};
+}
+
+// ══ DELETE MONTH ══
+function deleteCurrentMonth() {
+  if(!employees.length) return;
+  const emp = employees[currentEmpIdx];
+  const jp = LANG === 'JP';
+  const label = `${emp.name} ${currentYear}年${currentMonth}月`;
+  const msg = jp ? `${label}分のデータを削除しますか？\nこの操作は元に戻せません。` : `${label}분 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`;
+  if(!confirm(msg)) return;
+  const key = `kyuyo_p_${String(emp.no).padStart(4,'0')}_${currentYear}_${currentMonth}`;
+  localStorage.removeItem(key);
+  payrollDirty = false;
+  const saveBtn = document.getElementById('btn-save');
+  if(saveBtn) { saveBtn.style.background = ''; saveBtn.style.borderColor = ''; }
+  PFIELDS.forEach(f => { const el = document.getElementById(f); if(el) el.value = ''; });
+  recalc();
+  showToast(jp ? `${label}分を削除しました` : `${label}분 삭제됨`, 'w');
 }
 
 // ══ SAVE PAYROLL ══
