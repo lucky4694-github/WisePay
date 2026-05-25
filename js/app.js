@@ -1,4 +1,4 @@
-// 수정: 2026-05-24 18:35 — buildAnnualYearSel 추가: 연간 일람 연도 드롭다운 언어 대응 (년도/年度)
+// 수정: 2026-05-25 17:06 — initApp: employees 로드 시 shaho_start ISO 날짜 → YYYY-MM 정규화
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -71,7 +71,7 @@ function migrateRateHistory() {
 
 function initApp() {
   // load storage
-  try { const s = localStorage.getItem(LS.emp); if(s) employees = JSON.parse(s); } catch(e){}
+  try { const s = localStorage.getItem(LS.emp); if(s) { employees = JSON.parse(s); employees.forEach(e=>{ if(e&&e.shaho_start) e.shaho_start=normalizeYM(e.shaho_start); }); } } catch(e){}
   try { const s = localStorage.getItem(LS.rateHistory); if(s) rateHistory = JSON.parse(s); } catch(e){}
   // 마이그레이션
   syncFuyouFromFamilies();

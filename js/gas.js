@@ -1,4 +1,4 @@
-// 수정: 2026-05-24 14:10 — exportAllToGas 급여 키 패딩 버그 수정
+// 수정: 2026-05-25 17:06 — importAllFromGas/autoLoadFromGas: shaho_start ISO 날짜 → YYYY-MM 정규화
 'use strict';
 async function exportAllToGas() {
   if (!gasUrl) {
@@ -258,7 +258,8 @@ async function importAllFromGas() {
       employees=d.employees.map(e=>({...e,
         families:typeof e.families==='string'?JSON.parse(e.families||'[]'):(e.families||[]),
         fuyouCount:parseInt(e.fuyouCount)||0,
-        commute:parseInt(e.commute)||0
+        commute:parseInt(e.commute)||0,
+        shaho_start:normalizeYM(e.shaho_start||'')
       }));
       localStorage.setItem(LS.emp,JSON.stringify(employees));
       syncFuyouFromFamilies();
@@ -342,7 +343,8 @@ async function autoLoadFromGas() {
         ...e,
         families: typeof e.families === 'string' ? JSON.parse(e.families || '[]') : (e.families || []),
         fuyouCount: parseInt(e.fuyouCount) || 0,
-        commute: parseInt(e.commute) || 0
+        commute: parseInt(e.commute) || 0,
+        shaho_start: normalizeYM(e.shaho_start || '')
       }));
       localStorage.setItem(LS.emp, JSON.stringify(employees));
       syncFuyouFromFamilies();

@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-25 11:42 — importWageLedgerR8 추가: payroll_book-2026 CSV 데이터 Google 시트 반영
+// 수정: 2026-05-25 17:06 — sheetToObjects: shaho_start Date→YYYY-MM 변환 추가
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -130,7 +130,7 @@ function sheetToObjects(sheet) {
     headers.forEach((h, i) => {
       if (h !== '') {
         // Google Sheets가 YYYY-MM을 Date로 변환하는 문제 대응
-        if (String(h) === 'from' && row[i] instanceof Date) {
+        if ((String(h) === 'from' || String(h) === 'shaho_start') && row[i] instanceof Date) {
           const d = row[i];
           obj[String(h)] = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
         } else {
