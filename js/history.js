@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-25 22:28 — 임금대장: 데이터 없는 월 0 표시 (전년12월 포함)
+﻿// 수정: 2026-05-25 22:34 — 임금대장: 가로 스크롤 래퍼 추가 (min-width 780px)
 'use strict';
 function buildAnnualYearSel() {
   const sel = document.getElementById('annualYearSel');
@@ -165,7 +165,7 @@ function renderAnnual() {
     return `<div style="${c}">${neg?'-':''}${fmt(t)}</div>`;
   }
 
-  let html = `<div class="annual-wrap">`;
+  let html = `<div class="annual-scroll-wrap"><div class="annual-wrap">`;
 
   // ── 헤더 행 ──
   html += `<div class="annual-head-row" style="${cols}"><div>${jp?'項目':'항목'}</div>`;
@@ -202,7 +202,7 @@ function renderAnnual() {
   for(let i=0;i<showCount;i++) html += monthData[i] ? `<div>¥${fmt(monthData[i].net)}</div>` : `<div style="color:var(--text3)">¥0</div>`;
   html += `<div>¥${fmt(sumKey('net'))}</div></div>`;
 
-  html += `</div>`;
+  html += `</div></div>`;
 
   // 연간 합계 요약 바
   html += `<div style="margin-top:12px;background:var(--accent2);border:1px solid var(--accent3);border-radius:var(--r);padding:12px 16px;display:flex;gap:20px;flex-wrap:wrap;font-size:12.5px;">`;
