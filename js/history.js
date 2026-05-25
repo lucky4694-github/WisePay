@@ -1,4 +1,4 @@
-// 수정: 2026-05-25 23:16 — 임금대장 복수 사원 선택 인쇄 + 전체선택 버튼 + 인쇄 스크롤바 제거
+// 수정: 2026-05-25 23:24 — 임금대장 사원 선택: 체크박스 팝업 모달로 교체 (복수 선택, 전체/해제 버튼)
 'use strict';
 function buildAnnualYearSel() {
   const sel = document.getElementById('annualYearSel');
@@ -16,33 +16,73 @@ function buildAnnualYearSel() {
   if(years.map(String).includes(prev)) sel.value = prev;
 }
 
+// 체크리스트 빌드 — 이전 선택 유지 (첫 빌드 시 첫 번째 사원 선택)
 function buildAnnualEmpSel() {
-  const sel = document.getElementById('annualEmpSel');
-  if (!sel) return;
-  // 이전 선택 사원번호 보존
-  const prevNos = new Set(Array.from(sel.selectedOptions).map(o => o.value));
-  sel.innerHTML = '';
-  let firstOpt = null;
-  employees.forEach(e => {
+  const list = document.getElementById('annualEmpCheckList');
+  if (!list) return;
+  const isFirstBuild = list.children.length === 0;
+  const prevNos = new Set(getSelectedAnnualNos().map(String));
+  list.innerHTML = '';
+  employees.forEach((e, idx) => {
     if (!e || e.no == null) return;
-    const o = document.createElement('option');
-    o.value = String(e.no); // 인덱스 대신 사원번호로 안정적 식별
-    o.textContent = `${e.name}（${String(e.no).padStart(4,'0')}）`;
-    if (!firstOpt) firstOpt = o;
-    sel.appendChild(o);
+    const noStr = String(e.no);
+    const checked = isFirstBuild ? idx === 0 : prevNos.has(noStr);
+    const label = document.createElement('label');
+    label.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 6px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;user-select:none;';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = noStr;
+    cb.checked = checked;
+    cb.style.cssText = 'width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:var(--accent);';
+    const span = document.createElement('span');
+    span.textContent = `${e.name}（${String(e.no).padStart(4,'0')}）`;
+    label.appendChild(cb);
+    label.appendChild(span);
+    list.appendChild(label);
   });
-  // 이전 선택 복원
-  if (prevNos.size > 0) {
-    Array.from(sel.options).forEach(o => { if (prevNos.has(o.value)) o.selected = true; });
-  }
-  // 아무것도 선택 안 됐으면 첫 번째 선택
-  if (!Array.from(sel.options).some(o => o.selected) && firstOpt) firstOpt.selected = true;
+  updateAnnualSelSummary();
 }
 
-function selectAllAnnualEmp() {
-  const sel = document.getElementById('annualEmpSel');
-  if (!sel) return;
-  Array.from(sel.options).forEach(o => o.selected = true);
+// 현재 체크된 사원번호 배열 반환
+function getSelectedAnnualNos() {
+  return Array.from(
+    document.querySelectorAll('#annualEmpCheckList input[type="checkbox"]:checked')
+  ).map(cb => parseInt(cb.value));
+}
+
+// 선택 요약 텍스트 갱신
+function updateAnnualSelSummary() {
+  const nos = getSelectedAnnualNos();
+  const total = document.querySelectorAll('#annualEmpCheckList input[type="checkbox"]').length;
+  const jp = LANG === 'JP';
+  const summary = document.getElementById('annualEmpSelSummary');
+  if (!summary) return;
+  if (nos.length === 0) {
+    summary.textContent = jp ? '未選択' : '미선택';
+    summary.style.color = 'var(--red)';
+  } else if (nos.length === total) {
+    summary.textContent = jp ? `全員（${total}名）` : `전체（${total}명）`;
+    summary.style.color = 'var(--text2)';
+  } else if (nos.length === 1) {
+    const emp = employees.find(e => parseInt(e.no) === nos[0]);
+    summary.textContent = emp ? emp.name : `1${jp?'名':'명'}`;
+    summary.style.color = 'var(--text2)';
+  } else {
+    const emp = employees.find(e => parseInt(e.no) === nos[0]);
+    const first = emp ? emp.name : '';
+    summary.textContent = jp ? `${first} 他${nos.length-1}名` : `${first} 외${nos.length-1}명`;
+    summary.style.color = 'var(--text2)';
+  }
+}
+
+function openAnnualEmpModal()  { document.getElementById('annualEmpModal').classList.add('open'); }
+function closeAnnualEmpModal() { document.getElementById('annualEmpModal').classList.remove('open'); }
+function selectAllAnnualEmps() { document.querySelectorAll('#annualEmpCheckList input[type="checkbox"]').forEach(cb => cb.checked = true); }
+function clearAllAnnualEmps()  { document.querySelectorAll('#annualEmpCheckList input[type="checkbox"]').forEach(cb => cb.checked = false); }
+
+function applyAnnualEmpSel() {
+  closeAnnualEmpModal();
+  updateAnnualSelSummary();
   renderAnnual();
 }
 
@@ -63,9 +103,7 @@ function calcMonthData(emp, year, month) {
     const totalPay = base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
     const hyo_override = safeInt(d['r-hyo']);
     const hyo = hyo_override > 0 ? hyo_override : getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field);
-    // 해당 월의 정확한 요율 사용
     const r = getRatesForYM(year, month);
-    // 사회보험 가입 전월 면제
     const shahoParts = emp.shaho_start ? emp.shaho_start.split('-') : null;
     const shahoFrom = shahoParts ? parseInt(shahoParts[0])*100 + parseInt(shahoParts[1]) : 0;
     const shahoExempt = shahoFrom > 0 && (year*100 + month) < shahoFrom;
@@ -142,7 +180,6 @@ function buildEmpTableHtml(emp, year, jp) {
 
   let html = `<div class="annual-scroll-wrap"><div class="annual-wrap">`;
 
-  // 헤더 행
   html += `<div class="annual-head-row" style="${cols}"><div>${jp?'項目':'항목'}</div>`;
   for(let i=0;i<showCount;i++) {
     const {year:y,month:m}=fiscalMonths[i];
@@ -150,35 +187,29 @@ function buildEmpTableHtml(emp, year, jp) {
   }
   html += `<div>${jp?'年計':'연계'}</div></div>`;
 
-  // 지급 세부
   payItems.forEach(r => {
     html += `<div class="annual-data-row" style="${cols}"><div>${r.label}</div>`;
     for(let i=0;i<showCount;i++) html += monthData[i] ? valCell(monthData[i][r.key]) : noDataCell;
     html += sumCell(r.key) + `</div>`;
   });
-  // 지급합계
   html += `<div class="annual-data-row annual-subtotal-pay" style="${cols}"><div>${jp?'支給合計':'지급합계'}</div>`;
   for(let i=0;i<showCount;i++) html += monthData[i]?`<div>${fmt(monthData[i].totalPay)}</div>`:`<div style="color:var(--text3)">0</div>`;
   html += `<div style="font-weight:700;">${fmt(sumKey('totalPay'))}</div></div>`;
 
-  // 공제 세부
   deductItems.forEach(r => {
     html += `<div class="annual-data-row" style="${cols}"><div>${r.label}</div>`;
     for(let i=0;i<showCount;i++) html += monthData[i] ? valCell(monthData[i][r.key]) : noDataCell;
     html += sumCell(r.key) + `</div>`;
   });
-  // 공제합계
   html += `<div class="annual-data-row annual-subtotal-deduct" style="${cols}"><div>${jp?'控除合計':'공제합계'}</div>`;
   for(let i=0;i<showCount;i++) html += monthData[i]?`<div>${fmt(monthData[i].totalKojo)}</div>`:`<div style="color:var(--text3)">0</div>`;
   html += `<div style="font-weight:700;">${fmt(sumKey('totalKojo'))}</div></div>`;
 
-  // 차인지급액
   html += `<div class="annual-data-row annual-net-row" style="${cols}"><div>${jp?'差引支給額':'차인지급액'}</div>`;
   for(let i=0;i<showCount;i++) html += monthData[i]?`<div>¥${fmt(monthData[i].net)}</div>`:`<div style="color:var(--text3)">¥0</div>`;
   html += `<div>¥${fmt(sumKey('net'))}</div></div>`;
   html += `</div></div>`;
 
-  // 요약 바
   html += `<div style="margin-top:12px;background:var(--accent2);border:1px solid var(--accent3);border-radius:var(--r);padding:12px 16px;display:flex;gap:20px;flex-wrap:wrap;font-size:12.5px;">`;
   html += `<span><strong>${jp?'年間支給合計':'연간 지급 합계'}:</strong> ¥${fmt(sumKey('totalPay'))}</span>`;
   html += `<span><strong>${jp?'年間控除合計':'연간 공제 합계'}:</strong> ¥${fmt(sumKey('totalKojo'))}</span>`;
@@ -198,8 +229,7 @@ function renderAnnual() {
     return;
   }
 
-  const sel = document.getElementById('annualEmpSel');
-  const selectedNos = Array.from(sel.selectedOptions).map(o => parseInt(o.value));
+  const selectedNos = getSelectedAnnualNos();
   const year = parseInt(document.getElementById('annualYearSel')?.value)||2026;
   const today = jp ? new Date().toLocaleDateString('ja-JP') : new Date().toLocaleDateString('ko-KR');
   const noDataMsg = `<div style="padding:40px;text-align:center;color:var(--text3);">${jp?'この年度のデータがありません':'이 연도의 데이터가 없습니다'}</div>`;
@@ -211,7 +241,7 @@ function renderAnnual() {
     return;
   }
 
-  // ── 단일 사원: 기존 고정 헤더 방식 유지 ──
+  // 단일 사원: 고정 헤더 방식
   if (selectedNos.length === 1) {
     const emp = employees.find(e => parseInt(e.no) === selectedNos[0]);
     if (!emp) { ph.style.display='none'; document.getElementById('annualContent').innerHTML=noDataMsg; return; }
@@ -224,7 +254,7 @@ function renderAnnual() {
     return;
   }
 
-  // ── 복수 사원: 인라인 헤더 + 페이지 구분 ──
+  // 복수 사원: 인라인 헤더 + 페이지 구분
   ph.style.display = 'none';
   let allHtml = '';
   let count = 0;

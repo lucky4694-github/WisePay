@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-25 23:16 — t-annual-print 제거, t-annual-all/hint 추가
+﻿// 수정: 2026-05-25 23:24 — 임금대장 사원선택 모달 i18n 추가
 'use strict';
 function setTxt(id, jp, kr) {
   const el = document.getElementById(id);
@@ -107,8 +107,12 @@ function applyLang() {
   setTxt('t-rates-ai', '協会けんぽから最新料率を取得', '협회건포에서 최신 요율 가져오기');
   setTxt('t-rates-save', '料率を保存', '요율 저장');
 
-  setTxt('t-annual-all',  '全選択', '전체 선택');
-  setTxt('t-annual-hint', 'Ctrl+クリックで複数選択', 'Ctrl+클릭으로 복수 선택');
+  setTxt('t-annual-sel-btn',    '従業員選択',  '사원 선택');
+  setTxt('t-annual-modal-title','従業員を選択','사원 선택');
+  setTxt('t-annual-sel-all',   '全選択',      '전체 선택');
+  setTxt('t-annual-sel-clear', '全解除',      '전체 해제');
+  setTxt('t-annual-sel-ok',    '確認',        '확인');
+  setTxt('t-annual-sel-cancel','キャンセル',  '취소');
 
   setTxt('t-history-title', '支給履歴', '지급 이력');
   setTxt('t-h-month', '月', '월');
