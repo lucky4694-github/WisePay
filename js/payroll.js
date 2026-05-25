@@ -254,7 +254,7 @@ function recalc() {
   const fuyou = emp ? (parseInt(emp.fuyouCount)||0) : 0;
   const shotokuKbn = emp ? (emp.shotokuKbn||'ko') : 'ko';
   const isOtsu = shotokuKbn === 'otsu';
-  const shotoku = Math.max(0, calcShotoku(shotokuBase, fuyou, isOtsu));
+  const shotoku = Math.max(0, calcShotoku(shotokuBase, fuyou, isOtsu, currentYear, currentMonth));
 
   const totalKojo=shakai+shotoku+jumin+nencho;
   const net=totalPay-totalKojo;
