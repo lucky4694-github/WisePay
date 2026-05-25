@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-24 13:45 — saveSheet: 배열/객체 값 JSON 직렬화 (families "[object Object]" 버그 수정)
+// 수정: 2026-05-25 11:31 — importWageLedgerR7 추가: 賃金台帳(令和7年) PDF 데이터 Google 시트 반영
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -29,6 +29,7 @@ function doGet(e) {
     if      (action === 'test')                                    result = { ok: true };
     else if (action === 'getAll')                                  result = getAllData();
     else if (action === 'scrapeRates' || action === 'scrapeKenpoRates') result = scrapeKenpoRates();
+    else if (action === 'importWageLedgerR7')                       result = importWageLedgerR7()
     else if (action === 'importPayrolls') {
       let incoming = [];
       try { incoming = JSON.parse(e.parameter.payrolls || '[]'); } catch(err) { incoming = []; }
@@ -727,4 +728,82 @@ function importFreeePayrolls() {
 
   saveSheet(SHEET_PAY, merged);
   Logger.log('임포트 완료: ' + payrolls.length + '건 갱신, 합계 ' + merged.length + '건 → ' + SHEET_PAY);
+}
+
+// ── 賃金台帳(令和7年) データ → 급여데이터 시트 반영 ─────────────────
+// GAS 편집기에서 실행: 함수 목록에서 importWageLedgerR7 선택 후 ▶ 실행
+// 또는 웹 URL에 ?action=importWageLedgerR7&callback=xxx 추가
+//
+// ★ 포인트: 標準報酬月額 수동 지정(r-hyo)
+//   - 鄭 基石 2025/09,10 → r-hyo=260000 (수시개정 전 구등급 유지)
+//   - 朴 修完 2025/04~11 → r-hyo=300000 (자격취득시 등급, 통근포함 자동계산=320000와 불일치)
+// ★ 年末調整: 환급(還付)은 음수 — 총공제액을 줄여 차인지급액 증가
+//   - 鄭 基石 2024/12: k-nencho=-31280
+//   - 朴 娟慶 2024/12: k-nencho=-21000
+function importWageLedgerR7() {
+  const incoming = [
+    // ── 鄭 基石 (No.000002) ──
+    // 12月分(2024年12): 기본200,000+근무12,200+직무50,000 / 년말조정환급-31,280
+    { no:2, name:'鄭 基石', year:2024, month:12, 'r-base':200000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':12200,'r-shokumu':50000,'r-field':0,'r-hyo':0,     'k-jumin':5000,'k-nencho':-31280,'_net':244076 },
+    { no:2, name:'鄭 基石', year:2025, month:1,  'r-base':200000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':12200,'r-shokumu':50000,'r-field':0,'r-hyo':0,     'k-jumin':5000,'k-nencho':0,     '_net':212796 },
+    { no:2, name:'鄭 基石', year:2025, month:2,  'r-base':200000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':12200,'r-shokumu':50000,'r-field':0,'r-hyo':0,     'k-jumin':5000,'k-nencho':0,     '_net':212796 },
+    { no:2, name:'鄭 基石', year:2025, month:3,  'r-base':200000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':12200,'r-shokumu':50000,'r-field':0,'r-hyo':0,     'k-jumin':5000,'k-nencho':0,     '_net':212900 },
+    { no:2, name:'鄭 基石', year:2025, month:4,  'r-base':200000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':12200,'r-shokumu':50000,'r-field':0,'r-hyo':0,     'k-jumin':5000,'k-nencho':0,     '_net':212900 },
+    { no:2, name:'鄭 基石', year:2025, month:5,  'r-base':200000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':12200,'r-shokumu':50000,'r-field':0,'r-hyo':0,     'k-jumin':5000,'k-nencho':0,     '_net':212900 },
+    { no:2, name:'鄭 基石', year:2025, month:6,  'r-base':200000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':12200,'r-shokumu':50000,'r-field':0,'r-hyo':0,     'k-jumin':5000,'k-nencho':0,     '_net':212900 },
+    { no:2, name:'鄭 基石', year:2025, month:7,  'r-base':200000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':12200,'r-shokumu':50000,'r-field':0,'r-hyo':0,     'k-jumin':5000,'k-nencho':0,     '_net':212900 },
+    { no:2, name:'鄭 基石', year:2025, month:8,  'r-base':200000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':12200,'r-shokumu':50000,'r-field':0,'r-hyo':0,     'k-jumin':5000,'k-nencho':0,     '_net':212900 },
+    // 9,10月: 직무手当15,000のみ・給与減少も標準報酬月額は随時改定前260,000のまま
+    { no:2, name:'鄭 基石', year:2025, month:9,  'r-base':200000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,   'r-shokumu':15000,'r-field':0,'r-hyo':260000,'k-jumin':4900,'k-nencho':0,     '_net':167450 },
+    { no:2, name:'鄭 基石', year:2025, month:10, 'r-base':200000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,   'r-shokumu':15000,'r-field':0,'r-hyo':260000,'k-jumin':5300,'k-nencho':0,     '_net':167050 },
+    // 11月: 随時改定後220,000등급 (자동계산과 일치, r-hyo=0)
+    { no:2, name:'鄭 基石', year:2025, month:11, 'r-base':200000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,   'r-shokumu':15000,'r-field':0,'r-hyo':0,     'k-jumin':4900,'k-nencho':0,     '_net':173200 },
+    // ── 朴 娟慶 (No.000017) ──
+    // 12月分(2024年12): 년말조정환급-21,000
+    { no:17, name:'朴 娟慶', year:2024, month:12, 'r-base':360000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,'r-shokumu':0,'r-field':0,'r-hyo':0,'k-jumin':6400,'k-nencho':-21000,'_net':313406 },
+    { no:17, name:'朴 娟慶', year:2025, month:1,  'r-base':360000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,'r-shokumu':0,'r-field':0,'r-hyo':0,'k-jumin':6400,'k-nencho':0,     '_net':292406 },
+    { no:17, name:'朴 娟慶', year:2025, month:2,  'r-base':360000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,'r-shokumu':0,'r-field':0,'r-hyo':0,'k-jumin':6400,'k-nencho':0,     '_net':292406 },
+    { no:17, name:'朴 娟慶', year:2025, month:3,  'r-base':360000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,'r-shokumu':0,'r-field':0,'r-hyo':0,'k-jumin':6400,'k-nencho':0,     '_net':292550 },
+    { no:17, name:'朴 娟慶', year:2025, month:4,  'r-base':360000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,'r-shokumu':0,'r-field':0,'r-hyo':0,'k-jumin':6400,'k-nencho':0,     '_net':292730 },
+    { no:17, name:'朴 娟慶', year:2025, month:5,  'r-base':360000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,'r-shokumu':0,'r-field':0,'r-hyo':0,'k-jumin':6400,'k-nencho':0,     '_net':292730 },
+    { no:17, name:'朴 娟慶', year:2025, month:6,  'r-base':360000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,'r-shokumu':0,'r-field':0,'r-hyo':0,'k-jumin':6400,'k-nencho':0,     '_net':292730 },
+    { no:17, name:'朴 娟慶', year:2025, month:7,  'r-base':360000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,'r-shokumu':0,'r-field':0,'r-hyo':0,'k-jumin':6400,'k-nencho':0,     '_net':292730 },
+    { no:17, name:'朴 娟慶', year:2025, month:8,  'r-base':360000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,'r-shokumu':0,'r-field':0,'r-hyo':0,'k-jumin':6400,'k-nencho':0,     '_net':292730 },
+    { no:17, name:'朴 娟慶', year:2025, month:9,  'r-base':360000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,'r-shokumu':0,'r-field':0,'r-hyo':0,'k-jumin':6700,'k-nencho':0,     '_net':292430 },
+    { no:17, name:'朴 娟慶', year:2025, month:10, 'r-base':360000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,'r-shokumu':0,'r-field':0,'r-hyo':0,'k-jumin':8200,'k-nencho':0,     '_net':290930 },
+    { no:17, name:'朴 娟慶', year:2025, month:11, 'r-base':360000,'r-ot':0,'r-kintai':0,'r-commute':0,'r-commutetax':0,'r-kinmu':0,'r-shokumu':0,'r-field':0,'r-hyo':0,'k-jumin':6700,'k-nencho':0,     '_net':292430 },
+    // ── 朴 修完 (No.000019) 入社: 令和7年2月10日 ──
+    // 2,3月分: 社会保険未加入 (r-hyo=0で保険額=0として計算)
+    { no:19, name:'朴 修完', year:2025, month:2,  'r-base':136000,'r-ot':5000, 'r-kintai':0,'r-commute':2880, 'r-commutetax':0,'r-kinmu':68000, 'r-shokumu':0,'r-field':0,'r-hyo':0,     'k-jumin':0,'k-nencho':0,'_net':206750 },
+    { no:19, name:'朴 修完', year:2025, month:3,  'r-base':200000,'r-ot':20400,'r-kintai':0,'r-commute':13150,'r-commutetax':0,'r-kinmu':100000,'r-shokumu':0,'r-field':0,'r-hyo':0,     'k-jumin':0,'k-nencho':0,'_net':323410 },
+    // 4月~11月: 資格取得時標準報酬月額=300,000 (通勤込み自動計算=320,000 와 다름 → r-hyo=300000)
+    { no:19, name:'朴 修完', year:2025, month:4,  'r-base':200000,'r-ot':3600, 'r-kintai':0,'r-commute':13150,'r-commutetax':0,'r-kinmu':100000,'r-shokumu':0,'r-field':0,'r-hyo':300000,'k-jumin':0,'k-nencho':0,'_net':265843 },
+    { no:19, name:'朴 修完', year:2025, month:5,  'r-base':200000,'r-ot':7200, 'r-kintai':0,'r-commute':13150,'r-commutetax':0,'r-kinmu':100000,'r-shokumu':0,'r-field':0,'r-hyo':300000,'k-jumin':0,'k-nencho':0,'_net':269203 },
+    { no:19, name:'朴 修完', year:2025, month:6,  'r-base':200000,'r-ot':10800,'r-kintai':0,'r-commute':13150,'r-commutetax':0,'r-kinmu':100000,'r-shokumu':0,'r-field':0,'r-hyo':300000,'k-jumin':0,'k-nencho':0,'_net':272673 },
+    { no:19, name:'朴 修完', year:2025, month:7,  'r-base':200000,'r-ot':12000,'r-kintai':0,'r-commute':13150,'r-commutetax':0,'r-kinmu':100000,'r-shokumu':0,'r-field':0,'r-hyo':300000,'k-jumin':0,'k-nencho':0,'_net':273867 },
+    { no:19, name:'朴 修完', year:2025, month:8,  'r-base':200000,'r-ot':15600,'r-kintai':0,'r-commute':13150,'r-commutetax':0,'r-kinmu':100000,'r-shokumu':0,'r-field':0,'r-hyo':300000,'k-jumin':0,'k-nencho':0,'_net':277347 },
+    { no:19, name:'朴 修完', year:2025, month:9,  'r-base':200000,'r-ot':19200,'r-kintai':0,'r-commute':13150,'r-commutetax':0,'r-kinmu':100000,'r-shokumu':0,'r-field':0,'r-hyo':300000,'k-jumin':0,'k-nencho':0,'_net':280717 },
+    { no:19, name:'朴 修完', year:2025, month:10, 'r-base':200000,'r-ot':20000,'r-kintai':0,'r-commute':13150,'r-commutetax':0,'r-kinmu':100000,'r-shokumu':0,'r-field':0,'r-hyo':300000,'k-jumin':0,'k-nencho':0,'_net':281513 },
+    { no:19, name:'朴 修完', year:2025, month:11, 'r-base':200000,'r-ot':0,    'r-kintai':0,'r-commute':13150,'r-commutetax':0,'r-kinmu':100000,'r-shokumu':0,'r-field':0,'r-hyo':300000,'k-jumin':0,'k-nencho':0,'_net':262363 },
+  ];
+
+  const existing = sheetToObjects(getSheet(SHEET_PAY));
+  const payMap = {};
+  existing.forEach(function(p) {
+    payMap[String(parseInt(p.no)) + '_' + p.year + '_' + p.month] = p;
+  });
+  incoming.forEach(function(fp) {
+    const k = fp.no + '_' + fp.year + '_' + fp.month;
+    if (payMap[k]) { Object.assign(payMap[k], fp); } else { payMap[k] = fp; }
+  });
+  const merged = Object.values(payMap).sort(function(a, b) {
+    const nd = parseInt(a.no) - parseInt(b.no);
+    if (nd !== 0) return nd;
+    const yd = a.year - b.year;
+    if (yd !== 0) return yd;
+    return a.month - b.month;
+  });
+  saveSheet(SHEET_PAY, merged);
+  Logger.log('importWageLedgerR7 완료: ' + incoming.length + '건 → ' + SHEET_PAY);
+  return { ok: true, count: incoming.length };
 }
