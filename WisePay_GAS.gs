@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-25 23:48 — backupWeekly / deleteOldBackups / createWeeklyBackupTrigger 추가
+// 수정: 2026-05-26 04:39 — sheetToObjects: join/birth Date→YYYY-MM-DD, shaho_start 비정상값 '' 처리
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -130,17 +130,29 @@ function sheetToObjects(sheet) {
   const data = sheet.getDataRange().getValues();
   if (data.length < 2) return [];
   const headers = data[0];
-  return data.slice(1).map(row => {
+  return data.slice(1).map(function(row) {
     const obj = {};
-    headers.forEach((h, i) => {
-      if (h !== '') {
-        // Google Sheets가 YYYY-MM을 Date로 변환하는 문제 대응
-        if ((String(h) === 'from' || String(h) === 'shaho_start') && row[i] instanceof Date) {
-          const d = row[i];
-          obj[String(h)] = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-        } else {
-          obj[String(h)] = row[i];
-        }
+    headers.forEach(function(h, i) {
+      if (h === '') return;
+      const key = String(h);
+      const val = row[i];
+      if ((key === 'from' || key === 'shaho_start') && val instanceof Date) {
+        // YYYY-MM 필드: Date → YYYY-MM
+        obj[key] = val.getFullYear() + '-' + String(val.getMonth() + 1).padStart(2, '0');
+      } else if (key === 'shaho_start' && typeof val === 'string') {
+        // shaho_start 문자열: YYYY-MM 형식이 아니면 빈 값으로 처리
+        const ym = val.trim();
+        obj[key] = /^\d{4}-\d{2}$/.test(ym) ? ym : '';
+      } else if ((key === 'join' || key === 'birth') && val instanceof Date) {
+        // YYYY-MM-DD 필드: Date → YYYY-MM-DD (JST 기준)
+        obj[key] = val.getFullYear() + '-' +
+          String(val.getMonth() + 1).padStart(2, '0') + '-' +
+          String(val.getDate()).padStart(2, '0');
+      } else if ((key === 'join' || key === 'birth') && typeof val === 'string') {
+        // ISO 문자열에서 T 이후 시간 제거 (예: 2006-08-14T15:00:00.000Z → 2006-08-14)
+        obj[key] = val.replace(/T.*$/, '').trim();
+      } else {
+        obj[key] = val;
       }
     });
     return obj;

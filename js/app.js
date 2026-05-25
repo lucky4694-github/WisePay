@@ -1,4 +1,4 @@
-// 수정: 2026-05-25 23:48 — checkBackupReminder 호출 추가
+// 수정: 2026-05-26 04:39 — localStorage 로딩 시 join/birth normalizeDate 추가
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -71,7 +71,7 @@ function migrateRateHistory() {
 
 function initApp() {
   // load storage
-  try { const s = localStorage.getItem(LS.emp); if(s) { employees = JSON.parse(s); employees.forEach(e=>{ if(e&&e.shaho_start) e.shaho_start=normalizeYM(e.shaho_start); }); } } catch(e){}
+  try { const s = localStorage.getItem(LS.emp); if(s) { employees = JSON.parse(s); employees.forEach(e=>{ if(!e) return; if(e.shaho_start) e.shaho_start=normalizeYM(e.shaho_start); if(e.join) e.join=normalizeDate(e.join); if(e.birth) e.birth=normalizeDate(e.birth); }); } } catch(e){}
   try { const s = localStorage.getItem(LS.rateHistory); if(s) rateHistory = JSON.parse(s); } catch(e){}
   // 마이그레이션
   syncFuyouFromFamilies();

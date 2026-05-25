@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-24 14:32 — 전각/반각 IME 관련 코드 전체 제거 (toDateHalf, compositionend 등)
+﻿// 수정: 2026-05-26 04:39 — shaho_start 입력 UX 개선: 6자리 자동 포맷·유효성 검사·입사일 비교
 'use strict';
 function renderEmpList() {
   const body=document.getElementById('empListBody');
@@ -184,11 +184,15 @@ function renderEmpFormFields(emp) {
       <div class="form-label-block">
         <div class="form-label-row">
           <label class="form-label">${jp?'社保加入年月':'사회보험 가입 연월'}</label>
+          <span class="form-error" id="f-shaho-err"></span>
         </div>
-        <div class="form-label-hint">${jp?'例: 2025-04（空欄=全月適用）':'예: 2025-04（비어있으면 전 기간 적용）'}</div>
+        <div class="form-label-hint">${jp?'例: 2025-04 / 202504（空欄=全月）':'예: 2025-04 또는 202504（비어있으면 전 기간 적용）'}</div>
       </div>
       <input class="form-input" id="f-shaho-start" value="${v('shaho_start')}"
-        placeholder="YYYY-MM" maxlength="7" oninput="markDirty()">
+        placeholder="YYYY-MM" maxlength="7" autocomplete="off"
+        oninput="onShahoInput(this)"
+        onblur="onShahoBlur(this)"
+        onkeydown="onShahoKeydown(event)">
     </div>
     <div class="form-group">
       <div class="form-label-block">
@@ -513,6 +517,79 @@ function isValidDate(dateStr) {
   return true;
 }
 
+// ══ SHAHO_START (사회보험 가입 연월) YYYY-MM 입력/검증 ══
+
+function onShahoInput(input) {
+  const digits = input.value.replace(/\D/g, '');
+  // 숫자 6자리만 입력된 경우 자동 포맷 (202504 → 2025-04)
+  if (digits.length >= 6 && !input.value.includes('-')) {
+    input.value = digits.slice(0, 4) + '-' + digits.slice(4, 6);
+  }
+  clearFieldError('f-shaho-err', 'f-shaho-start');
+  markDirty();
+}
+
+function onShahoBlur(input) {
+  const digits = input.value.replace(/\D/g, '');
+  if (digits.length === 6 && !input.value.includes('-')) {
+    input.value = digits.slice(0, 4) + '-' + digits.slice(4, 6);
+  }
+  validateShahoStart(input, 'f-shaho-err');
+}
+
+function onShahoKeydown(event) {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  const input = event.target;
+  const digits = input.value.replace(/\D/g, '');
+  if (digits.length === 6 && !input.value.includes('-')) {
+    input.value = digits.slice(0, 4) + '-' + digits.slice(4, 6);
+  }
+  if (!validateShahoStart(input, 'f-shaho-err')) { input.focus(); return; }
+  const next = document.getElementById('f-shotoku-kbn');
+  if (next) next.focus();
+}
+
+function validateShahoStart(input, errId) {
+  const errEl = document.getElementById(errId);
+  if (!errEl) return true;
+  const jp = LANG === 'JP';
+  const v = (input.value || '').trim();
+
+  if (!v) {
+    errEl.textContent = ''; input.classList.remove('error');
+    return true;
+  }
+
+  const match = v.match(/^(\d{4})-(\d{2})$/);
+  if (!match) {
+    errEl.textContent = jp ? '例: 2025-04 または 202504' : '예: 2025-04 또는 202504';
+    input.classList.add('error');
+    return false;
+  }
+
+  const y = parseInt(match[1]), m = parseInt(match[2]);
+  if (m < 1 || m > 12) {
+    errEl.textContent = jp ? '月は1〜12で入力してください' : '월은 1~12로 입력해 주세요';
+    input.classList.add('error');
+    return false;
+  }
+
+  // 입사일보다 이전인지 확인
+  const joinMatch = (document.getElementById('f-join')?.value || '').match(/^(\d{4})-(\d{2})/);
+  if (joinMatch) {
+    const jy = parseInt(joinMatch[1]), jm = parseInt(joinMatch[2]);
+    if (y < jy || (y === jy && m < jm)) {
+      errEl.textContent = jp ? '入社年月より前の日付は入力できません' : '입사 연월보다 이른 날짜는 입력할 수 없습니다';
+      input.classList.add('error');
+      return false;
+    }
+  }
+
+  errEl.textContent = ''; input.classList.remove('error');
+  return true;
+}
+
 // ══ EMP NO 0패딩 ══
 function padEmpNo(input) {
   if(input.value) input.value = input.value.padStart(4,'0');
@@ -617,6 +694,12 @@ function saveEmployee() {
   else clearFieldError('f-kana-err', 'f-kana');
   if(joinEl && !validateDateText(joinEl, 'f-join-err', true)) ok = false;
   if(birthEl && !validateDateText(birthEl, 'f-birth-err', true)) ok = false;
+  const shahoEl = document.getElementById('f-shaho-start');
+  if(shahoEl && shahoEl.value.trim()) {
+    const sd = shahoEl.value.replace(/\D/g, '');
+    if(sd.length === 6 && !shahoEl.value.includes('-')) shahoEl.value = sd.slice(0,4)+'-'+sd.slice(4,6);
+    if(!validateShahoStart(shahoEl, 'f-shaho-err')) ok = false;
+  }
   if(!ok) {
     showToast(jp?'必須項目を確認してください':'필수 항목을 확인해 주세요','w');
     return;

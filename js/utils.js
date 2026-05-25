@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-22 14:20 — normalizeDate 함수 추가
+﻿// 수정: 2026-05-26 04:39 — normalizeYM strict화: 비정상 값 '' 반환
 'use strict';
 
 function openModal(id) {
@@ -31,6 +31,7 @@ function fmt(n) {
 }
 
 // Google Sheets가 "2026-04"를 날짜로 변환해 ISO 문자열로 돌려줄 때 정규화
+// YYYY-MM 형식이 아니거나 파싱 불가능하면 '' 반환 (strict)
 function normalizeYM(val) {
   if (!val) return '';
   const s = String(val).trim();
@@ -43,8 +44,8 @@ function normalizeYM(val) {
       return `${y}-${m}`;
     }
   } catch(e) {}
-  const match = s.match(/^(\d{4})-(\d{2})/);
-  return match ? `${match[1]}-${match[2]}` : s;
+  const match = s.match(/^(\d{4})-(\d{2})$/);
+  return match ? `${match[1]}-${match[2]}` : '';
 }
 
 // ISO 날짜 문자열 → YYYY-MM-DD (예: '1973-07-18T15:00:00.000Z' → '1973-07-18')

@@ -1,4 +1,4 @@
-// 수정: 2026-05-25 22:57 — autoLoadFromGas/importAllFromGas 완료 시 동기화로그 GAS 시트에 기록
+// 수정: 2026-05-26 04:39 — 로딩 시 join/birth normalizeDate 추가
 'use strict';
 async function exportAllToGas() {
   if (!gasUrl) {
@@ -256,6 +256,8 @@ async function importAllFromGas() {
     const d = result.data || result;
     if(d.employees&&d.employees.length>0){
       employees=d.employees.map(e=>({...e,
+        join: normalizeDate(e.join||''),
+        birth: normalizeDate(e.birth||''),
         families:typeof e.families==='string'?JSON.parse(e.families||'[]'):(e.families||[]),
         fuyouCount:parseInt(e.fuyouCount)||0,
         commute:parseInt(e.commute)||0,
@@ -346,6 +348,8 @@ async function autoLoadFromGas() {
     if (d.employees && d.employees.length > 0) {
       employees = d.employees.map(e => ({
         ...e,
+        join: normalizeDate(e.join || ''),
+        birth: normalizeDate(e.birth || ''),
         families: typeof e.families === 'string' ? JSON.parse(e.families || '[]') : (e.families || []),
         fuyouCount: parseInt(e.fuyouCount) || 0,
         commute: parseInt(e.commute) || 0,
