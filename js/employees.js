@@ -183,6 +183,16 @@ function renderEmpFormFields(emp) {
     <div class="form-group">
       <div class="form-label-block">
         <div class="form-label-row">
+          <label class="form-label">${jp?'社保加入年月':'사회보험 가입 연월'}</label>
+        </div>
+        <div class="form-label-hint">${jp?'例: 2025-04（空欄=全月適用）':'예: 2025-04（비어있으면 전 기간 적용）'}</div>
+      </div>
+      <input class="form-input" id="f-shaho-start" value="${v('shaho_start')}"
+        placeholder="YYYY-MM" maxlength="7" oninput="markDirty()">
+    </div>
+    <div class="form-group">
+      <div class="form-label-block">
+        <div class="form-label-row">
           <label class="form-label">${jp?'所得税区分':'소득세 구분'}</label>
         </div>
       </div>
@@ -628,6 +638,7 @@ function saveEmployee() {
     birth: birthVal,
     kaigo: document.getElementById('f-kaigo')?.value||'auto',
     koyo: document.getElementById('f-koyo')?.value||'yes',
+    shaho_start: (document.getElementById('f-shaho-start')?.value||'').trim(),
     shotokuKbn: document.getElementById('f-shotoku-kbn')?.value||'ko',
     fuyouCount: parseInt(document.getElementById('f-fuyou')?.value)||0,
     base: 0,

@@ -234,12 +234,17 @@ function recalc() {
   // 標準報酬月額：r-hyoが0より大きければ手動値を優先（随時改定・資格取得時の実際の等級）
   const hyo_override = pv('r-hyo');
   const hyo = hyo_override > 0 ? hyo_override : (emp ? getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field) : 58000);
-  const kenko=Math.floor(hyo*rates.kenko/100/2);
-  const kaigo=emp&&isKaigo(emp)?Math.floor(hyo*rates.kaigo/100/2):0;
-  const kodomo=Math.floor(hyo*rates.kodomo/100/2);
-  const nenkin=Math.floor(hyo*rates.nenkin/100/2);
-  // 고용보험: 미가입이면 0
-  const koyoEnabled = !emp || emp.koyo !== 'no';
+  // 사회보험 가입 전월 면제: shaho_start(YYYY-MM) 이전 월은 전 사회보험 0, 소득세만 적용
+  const shahoParts = emp && emp.shaho_start ? emp.shaho_start.split('-') : null;
+  const shahoFrom = shahoParts ? parseInt(shahoParts[0])*100 + parseInt(shahoParts[1]) : 0;
+  const shahoExempt = shahoFrom > 0 && (currentYear*100 + currentMonth) < shahoFrom;
+
+  const kenko  = shahoExempt ? 0 : Math.floor(hyo*rates.kenko/100/2);
+  const kaigo  = shahoExempt ? 0 : (emp&&isKaigo(emp)?Math.floor(hyo*rates.kaigo/100/2):0);
+  const kodomo = shahoExempt ? 0 : Math.floor(hyo*rates.kodomo/100/2);
+  const nenkin = shahoExempt ? 0 : Math.floor(hyo*rates.nenkin/100/2);
+  // 고용보험: 사회보험 면제 기간이거나 미가입이면 0
+  const koyoEnabled = !shahoExempt && (!emp || emp.koyo !== 'no');
   const koyo = koyoEnabled ? Math.round(totalPay*rates.koyo/100) : 0;
   // 고용보험 입력란 비활성화 처리
   const koyoEl = document.getElementById('k-koyo');
