@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-24 19:56 — calcMonthData·renderHistory: r-hyo 수동 표준보수월액 우선 사용
+﻿// 수정: 2026-05-25 15:14 — renderHistory: shahoExempt + koyoEnabled + Math.round(koyo) + year/month→calcShotoku 버그 수정
 'use strict';
 function buildAnnualYearSel() {
   const sel = document.getElementById('annualYearSel');
@@ -51,17 +51,21 @@ function calcMonthData(emp, year, month) {
     const hyo = hyo_override > 0 ? hyo_override : getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field);
     // 해당 월의 정확한 요율 사용
     const r = getRatesForYM(year, month);
-    const kenko=Math.floor(hyo*r.kenko/100/2);
-    const kaigo2=isKaigo(emp)?Math.floor(hyo*r.kaigo/100/2):0;
-    const kodomo=Math.floor(hyo*r.kodomo/100/2);
-    const nenkin=Math.floor(hyo*r.nenkin/100/2);
-    const koyoEnabled = emp.koyo !== 'no';
-    const koyo=koyoEnabled ? Math.round(totalPay*r.koyo/100) : 0;
+    // 사회보험 가입 전월 면제
+    const shahoParts = emp.shaho_start ? emp.shaho_start.split('-') : null;
+    const shahoFrom = shahoParts ? parseInt(shahoParts[0])*100 + parseInt(shahoParts[1]) : 0;
+    const shahoExempt = shahoFrom > 0 && (year*100 + month) < shahoFrom;
+    const kenko  = shahoExempt ? 0 : Math.floor(hyo*r.kenko/100/2);
+    const kaigo2 = shahoExempt ? 0 : (isKaigo(emp)?Math.floor(hyo*r.kaigo/100/2):0);
+    const kodomo = shahoExempt ? 0 : Math.floor(hyo*r.kodomo/100/2);
+    const nenkin = shahoExempt ? 0 : Math.floor(hyo*r.nenkin/100/2);
+    const koyoEnabled = !shahoExempt && emp.koyo !== 'no';
+    const koyo   = koyoEnabled ? Math.round(totalPay*r.koyo/100) : 0;
     const shakai=kenko+kaigo2+kodomo+nenkin+koyo;
     const shotokuBase = totalPay-commute-shakai;
     const fuyou = parseInt(emp.fuyouCount)||0;
     const isOtsu = (emp.shotokuKbn||'ko') === 'otsu';
-    let shotoku = Math.max(0, calcShotoku(shotokuBase, fuyou, isOtsu));
+    let shotoku = Math.max(0, calcShotoku(shotokuBase, fuyou, isOtsu, year, month));
     const totalKojo=shakai+shotoku+jumin+nencho;
     const net=totalPay-totalKojo;
     return {totalPay,kenko,kaigo:kaigo2,kodomo,nenkin,koyo,shakai,shotoku,jumin,nencho,totalKojo,net};
@@ -213,15 +217,19 @@ function renderHistory() {
     const hyo_override=safeInt(d['r-hyo']);
     const hyo=hyo_override>0?hyo_override:getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field);
     const r=getRatesForYM(year,m);
-    const kenko=Math.floor(hyo*r.kenko/100/2);
-    const kaigo2=isKaigo(emp)?Math.floor(hyo*r.kaigo/100/2):0;
-    const kodomo=Math.floor(hyo*r.kodomo/100/2);
-    const nenkin=Math.floor(hyo*r.nenkin/100/2);
-    const koyo=Math.floor(totalPay*r.koyo/100);
+    const shahoParts=emp.shaho_start?emp.shaho_start.split('-'):null;
+    const shahoFrom=shahoParts?parseInt(shahoParts[0])*100+parseInt(shahoParts[1]):0;
+    const shahoExempt=shahoFrom>0&&(year*100+m)<shahoFrom;
+    const kenko=shahoExempt?0:Math.floor(hyo*r.kenko/100/2);
+    const kaigo2=shahoExempt?0:(isKaigo(emp)?Math.floor(hyo*r.kaigo/100/2):0);
+    const kodomo=shahoExempt?0:Math.floor(hyo*r.kodomo/100/2);
+    const nenkin=shahoExempt?0:Math.floor(hyo*r.nenkin/100/2);
+    const koyoEnabled=!shahoExempt&&emp.koyo!=='no';
+    const koyo=koyoEnabled?Math.round(totalPay*r.koyo/100):0;
     const shakai=kenko+kaigo2+kodomo+nenkin+koyo;
     const fuyou=parseInt(emp.fuyouCount)||0;
     const isOtsu=(emp.shotokuKbn||'ko')==='otsu';
-    const shotoku=Math.max(0,calcShotoku(totalPay-commute-shakai,fuyou,isOtsu));
+    const shotoku=Math.max(0,calcShotoku(totalPay-commute-shakai,fuyou,isOtsu,year,m));
     const jumin=safeInt(d['k-jumin']),nencho=safeInt(d['k-nencho']);
     const totalKojo=shakai+shotoku+jumin+nencho;
     const net=totalPay-totalKojo;
