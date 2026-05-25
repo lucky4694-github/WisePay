@@ -1,4 +1,4 @@
-// 수정: 2026-05-25 17:06 — importAllFromGas/autoLoadFromGas: shaho_start ISO 날짜 → YYYY-MM 정규화
+// 수정: 2026-05-25 22:57 — autoLoadFromGas/importAllFromGas 완료 시 동기화로그 GAS 시트에 기록
 'use strict';
 async function exportAllToGas() {
   if (!gasUrl) {
@@ -288,6 +288,11 @@ async function importAllFromGas() {
     applyRatesForYM(currentYear,currentMonth); updateRatesDisplay(); renderRatesPage();
     buildHistEmpSel(); renderHistory(); buildAnnualEmpSel(); renderAnnual(); checkRateBanner();
     showToast(jp?'ダウンロード完了 ✓':'가져오기 완료 ✓','s');
+    // 동기화 로그 기록 (fire-and-forget)
+    fetch(gasUrl, {
+      method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ type: 'appendLog', logType: '수동동기화', empCount: (d.employees || []).length, payrollCount: (d.payrolls || []).length, result: '성공', memo: '' })
+    }).catch(() => {});
   } catch(err){
     if(statusEl) statusEl.innerHTML='<span style="color:var(--red)">❌ '+err.message+'</span>';
     console.error('importAllFromGas error:', err);
@@ -377,6 +382,11 @@ async function autoLoadFromGas() {
     renderHistory();
     updateGasStatus();
     showToast(LANG === 'JP' ? 'Google同期完了 ✓' : 'Google 동기화 완료 ✓', 's');
+    // 동기화 로그 기록 (fire-and-forget)
+    fetch(gasUrl, {
+      method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ type: 'appendLog', logType: '자동동기화', empCount: (d.employees || []).length, payrollCount: (d.payrolls || []).length, result: '성공', memo: '' })
+    }).catch(() => {});
   } catch (err) {
     console.warn('GAS auto-load failed:', err);
   }

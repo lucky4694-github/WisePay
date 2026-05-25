@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-25 17:06 — sheetToObjects: shaho_start Date→YYYY-MM 변환 추가
+// 수정: 2026-05-25 22:57 — appendLog 함수 추가 + doPost appendLog 핸들러 + 동기화로그 시트 기록
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -9,6 +9,7 @@
 const SHEET_EMP  = '사원정보';
 const SHEET_PAY  = '급여데이터';
 const SHEET_RATE = '보험료율데이터';
+const SHEET_LOG  = '동기화로그';
 
 // 일본어 시트명 (마이그레이션 후 삭제 대상)
 const SHEET_EMP_JP  = '従業員';
@@ -79,6 +80,10 @@ function doPost(e) {
         saveSheet(SHEET_EMP, data.employees);
       }
       return jsonResponse({ ok: true, count: (data.employees || []).length });
+    }
+    if (data.type === 'appendLog') {
+      appendLog(data);
+      return jsonResponse({ ok: true });
     }
     if (data.type === 'importPayrolls') {
       const incoming = data.payrolls || [];
@@ -154,6 +159,23 @@ function saveSheet(name, records) {
       ? JSON.stringify(v) : v;
   }))];
   sheet.getRange(1, 1, rows.length, headers.length).setValues(rows);
+}
+
+function appendLog(data) {
+  const MAX_ROWS = 500;
+  const headers = ['timestamp', 'logType', 'empCount', 'payrollCount', 'result', 'memo'];
+  const sheet = getSheet(SHEET_LOG);
+  if (sheet.getLastRow() === 0) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+  const ts = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
+  const row = [ts, data.logType || '', data.empCount || 0, data.payrollCount || 0, data.result || '', data.memo || ''];
+  sheet.insertRowAfter(1);
+  sheet.getRange(2, 1, 1, row.length).setValues([row]);
+  const total = sheet.getLastRow() - 1;
+  if (total > MAX_ROWS) {
+    sheet.deleteRows(MAX_ROWS + 2, total - MAX_ROWS);
+  }
 }
 
 function getAllData() {
