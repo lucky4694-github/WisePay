@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-25 22:12 — 임금대장: 데이터 없는 전년12월 컬럼 자동 숨김
+﻿// 수정: 2026-05-25 22:18 — 임금대장: 전년12월 항상 표시 + 중도입사 시 헤더에 입사일 표시
 'use strict';
 function buildAnnualYearSel() {
   const sel = document.getElementById('annualYearSel');
@@ -94,7 +94,19 @@ function renderAnnual() {
   const ph = document.getElementById('annualPrintHeader');
   ph.style.display='block';
   document.getElementById('annualPrintTitle').textContent = `${emp.name}（${String(emp.no).padStart(4,'0')}） ${year}${jp?'年度':'년도'} ${jp?'賃金台帳':'임금대장'}`;
-  document.getElementById('annualPrintSub').textContent = jp?`出力日：${new Date().toLocaleDateString('ja-JP')}`:`출력일：${new Date().toLocaleDateString('ko-KR')}`;
+  // 중도입사 판정: 해당 연도(전년12월~당년11월) 이내에 입사
+  let joinNote = '';
+  if(emp.join) {
+    const jp2 = jp;
+    const parts = emp.join.split('-');
+    const jy = parseInt(parts[0]), jm = parseInt(parts[1]);
+    const fiscalStart = (year-1)*100 + 12; // 전년 12월
+    const joinYM = jy*100 + jm;
+    if(joinYM > fiscalStart) {
+      joinNote = jp2 ? `　入社日：${jy}年${jm}月` : `　입사일：${jy}년 ${jm}월`;
+    }
+  }
+  document.getElementById('annualPrintSub').textContent = (jp?`出力日：${new Date().toLocaleDateString('ja-JP')}`:`출력일：${new Date().toLocaleDateString('ko-KR')}`) + joinNote;
 
   // 익월 10일 지급: 前年12月～当年11月
   const fiscalMonths = [
@@ -110,14 +122,13 @@ function renderAnnual() {
     return;
   }
 
-  let firstIdx = -1, lastIdx = 0;
-  for(let i=0; i<12; i++) { if(monthData[i] !== null) { if(firstIdx === -1) firstIdx = i; lastIdx = i; } }
-  if(firstIdx === -1) firstIdx = 0;
-  const showCount = lastIdx - firstIdx + 1;
+  let lastIdx = 0;
+  for(let i=0; i<12; i++) { if(monthData[i] !== null) lastIdx = i; }
+  const showCount = lastIdx + 1;
   // 항목열 + 월열들 + 연계열
   const cols = `grid-template-columns:110px repeat(${showCount},1fr) 86px;`;
 
-  const sumKey = key => monthData.slice(firstIdx, lastIdx+1).reduce((s,d) => s+(d?d[key]:0), 0);
+  const sumKey = key => monthData.slice(0, showCount).reduce((s,d) => s+(d?d[key]:0), 0);
 
   // 지급 세부 — 급여 명세와 동일 항목, 전 사원 레이아웃 통일을 위해 무조건 전체 표시
   const payItems = [
@@ -158,7 +169,7 @@ function renderAnnual() {
 
   // ── 헤더 행 ──
   html += `<div class="annual-head-row" style="${cols}"><div>${jp?'項目':'항목'}</div>`;
-  for(let i=firstIdx;i<=lastIdx;i++) {
+  for(let i=0;i<showCount;i++) {
     const {year:y,month:m} = fiscalMonths[i];
     html += `<div>${(m===12&&y===year-1)?(jp?`前年<br>12${mu}`:`전년<br>12${mu}`):`${m}${mu}`}</div>`;
   }
@@ -167,28 +178,28 @@ function renderAnnual() {
   // ── 지급 세부 ──
   payItems.forEach(r => {
     html += `<div class="annual-data-row" style="${cols}"><div>${r.label}</div>`;
-    for(let i=firstIdx;i<=lastIdx;i++) html += monthData[i] ? valCell(monthData[i][r.key], false) : noDataCell;
+    for(let i=0;i<showCount;i++) html += monthData[i] ? valCell(monthData[i][r.key], false) : noDataCell;
     html += sumCell(r.key, false, false) + `</div>`;
   });
   // 지급합계
   html += `<div class="annual-data-row annual-subtotal-pay" style="${cols}"><div>${jp?'支給合計':'지급합계'}</div>`;
-  for(let i=firstIdx;i<=lastIdx;i++) html += monthData[i] ? `<div>${fmt(monthData[i].totalPay)}</div>` : noDataCell;
+  for(let i=0;i<showCount;i++) html += monthData[i] ? `<div>${fmt(monthData[i].totalPay)}</div>` : noDataCell;
   html += `<div style="font-weight:700;">${fmt(sumKey('totalPay'))}</div></div>`;
 
   // ── 공제 세부 ──
   deductItems.forEach(r => {
     html += `<div class="annual-data-row" style="${cols}"><div>${r.label}</div>`;
-    for(let i=firstIdx;i<=lastIdx;i++) html += monthData[i] ? valCell(monthData[i][r.key], false) : noDataCell;
+    for(let i=0;i<showCount;i++) html += monthData[i] ? valCell(monthData[i][r.key], false) : noDataCell;
     html += sumCell(r.key, false, false) + `</div>`;
   });
   // 공제합계
   html += `<div class="annual-data-row annual-subtotal-deduct" style="${cols}"><div>${jp?'控除合計':'공제합계'}</div>`;
-  for(let i=firstIdx;i<=lastIdx;i++) html += monthData[i] ? `<div>${fmt(monthData[i].totalKojo)}</div>` : noDataCell;
+  for(let i=0;i<showCount;i++) html += monthData[i] ? `<div>${fmt(monthData[i].totalKojo)}</div>` : noDataCell;
   html += `<div style="font-weight:700;">${fmt(sumKey('totalKojo'))}</div></div>`;
 
   // ── 차인지급액 ──
   html += `<div class="annual-data-row annual-net-row" style="${cols}"><div>${jp?'差引支給額':'차인지급액'}</div>`;
-  for(let i=firstIdx;i<=lastIdx;i++) html += monthData[i] ? `<div>¥${fmt(monthData[i].net)}</div>` : noDataCell;
+  for(let i=0;i<showCount;i++) html += monthData[i] ? `<div>¥${fmt(monthData[i].net)}</div>` : noDataCell;
   html += `<div>¥${fmt(sumKey('net'))}</div></div>`;
 
   html += `</div>`;
