@@ -1,6 +1,6 @@
 <!-- ================================================
   WisePay (給与Pro by Wisewires)
-  수정: 2026-05-25 23:33 — app.js: beforeprint/afterprint 핸들러 추가로 인쇄 시 스크롤바 제거
+  수정: 2026-05-25 23:35 — styles.css: @page margin:0 인쇄 헤더/푸터 제거, 사원 체크리스트 5명 한도
 ================================================ -->
 <!DOCTYPE html>
 <html lang="ko">
@@ -469,7 +469,7 @@
         <button class="btn btn-sm" onclick="selectAllAnnualEmps()"><span id="t-annual-sel-all">全選択</span></button>
         <button class="btn btn-sm" onclick="clearAllAnnualEmps()"><span id="t-annual-sel-clear">全解除</span></button>
       </div>
-      <div id="annualEmpCheckList" style="max-height:300px;overflow-y:auto;"></div>
+      <div id="annualEmpCheckList" style="max-height:175px;overflow-y:auto;"></div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-primary" onclick="applyAnnualEmpSel()"><span id="t-annual-sel-ok">確認</span></button>
