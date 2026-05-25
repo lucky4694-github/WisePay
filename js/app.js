@@ -131,7 +131,7 @@ function gotoPage(id, el) {
     // 경고 무시하고 이동 선택 — 미저장 내용 파기
     payrollDirty = false;
     const saveBtn = document.getElementById('btn-save');
-    if(saveBtn) saveBtn.style.background = '';
+    if(saveBtn) { saveBtn.style.background = ''; saveBtn.style.borderColor = ''; }
   }
 
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));

@@ -112,7 +112,7 @@ function loadPayrollForm() {
     if(ph) ph.style.display = '';
     payrollDirty = false;
     const saveBtn = document.getElementById('btn-save');
-    if(saveBtn) saveBtn.style.background = '';
+    if(saveBtn) { saveBtn.style.background = ''; saveBtn.style.borderColor = ''; }
     return;
   }
 
@@ -153,7 +153,7 @@ function loadPayrollForm() {
   updateEmpHeader();
   payrollDirty = false;
   const saveBtn = document.getElementById('btn-save');
-  if(saveBtn) saveBtn.style.background = '';
+  if(saveBtn) { saveBtn.style.background = ''; saveBtn.style.borderColor = ''; }
   recalc();
 }
 
@@ -300,7 +300,7 @@ function saveCurrent() {
   // dirty 리셋 + 버튼 색 복구
   payrollDirty = false;
   const saveBtn = document.getElementById('btn-save');
-  if(saveBtn) saveBtn.style.background = '';
+  if(saveBtn) { saveBtn.style.background = ''; saveBtn.style.borderColor = ''; }
 
   if(gasUrl && window._calc) {
     const c=window._calc;
