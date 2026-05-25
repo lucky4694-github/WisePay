@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-25 22:40 — 이 월 삭제 버튼 → N월 데이터 초기화로 동적 표시
+﻿// 수정: 2026-05-25 23:05 — 데이터 없는 월 빈 화면 + 로드 시 천 단위 콤마 표시
 'use strict';
 function renderMonthTabs() {
   const c = document.getElementById('monthTabs');
@@ -122,27 +122,16 @@ function loadPayrollForm() {
   if(saved) {
     try {
       const d = JSON.parse(saved);
-      PFIELDS.forEach(f => { const el=document.getElementById(f); if(el && d[f]!==undefined) el.value=d[f]; });
+      PFIELDS.forEach(f => {
+        const el = document.getElementById(f);
+        if(!el || d[f] === undefined) return;
+        const n = parseInt(String(d[f]).replace(/,/g, '')) || 0;
+        el.value = n === 0 ? '' : n.toLocaleString();
+      });
     } catch(e){}
   } else {
-    const prevM = currentMonth === 1 ? 12 : currentMonth - 1;
-    const prevY = currentMonth === 1 ? currentYear - 1 : currentYear;
-    const prevKey = `kyuyo_p_${pNo}_${prevY}_${prevM}`;
-    const prevSaved = localStorage.getItem(prevKey);
-    if(prevSaved) {
-      try {
-        const d = JSON.parse(prevSaved);
-        PFIELDS.forEach(f => { const el=document.getElementById(f); if(el && d[f]!==undefined) el.value=d[f]; });
-        document.getElementById('r-ot').value = '';
-        document.getElementById('k-nencho').value = '';
-        document.getElementById('r-commute').value = emp.commute || '';
-      } catch(e){}
-    } else {
-      document.getElementById('r-commute').value = emp.commute ? emp.commute.toLocaleString() : '';
-      ['r-base','r-ot','r-kintai','r-commutetax','r-kinmu','r-shokumu','r-field','k-jumin','k-nencho'].forEach(f => {
-        document.getElementById(f).value='';
-      });
-    }
+    // 저장된 데이터 없으면 전 필드 빈 값 — 전월 자동복사 없음
+    PFIELDS.forEach(f => { const el = document.getElementById(f); if(el) el.value = ''; });
   }
   updateEmpHeader();
   payrollDirty = false;
