@@ -1,4 +1,4 @@
-// 수정: 2026-05-25 23:08 — 임금대장 전사원 인쇄 기능 추가 (전사원 선택 시 일괄 출력)
+// 수정: 2026-05-25 23:16 — 임금대장 복수 사원 선택 인쇄 + 전체선택 버튼 + 인쇄 스크롤바 제거
 'use strict';
 function buildAnnualYearSel() {
   const sel = document.getElementById('annualYearSel');
@@ -19,21 +19,31 @@ function buildAnnualYearSel() {
 function buildAnnualEmpSel() {
   const sel = document.getElementById('annualEmpSel');
   if (!sel) return;
-  const jp = LANG === 'JP';
-  const prev = sel.value;
+  // 이전 선택 사원번호 보존
+  const prevNos = new Set(Array.from(sel.selectedOptions).map(o => o.value));
   sel.innerHTML = '';
-  // 전사원 옵션
-  const allOpt = document.createElement('option');
-  allOpt.value = 'all';
-  allOpt.textContent = jp ? '全従業員' : '전사원';
-  sel.appendChild(allOpt);
-  employees.forEach((e, i) => {
+  let firstOpt = null;
+  employees.forEach(e => {
     if (!e || e.no == null) return;
     const o = document.createElement('option');
-    o.value = i; o.textContent = `${e.name}（${String(e.no).padStart(4,'0')}）`;
+    o.value = String(e.no); // 인덱스 대신 사원번호로 안정적 식별
+    o.textContent = `${e.name}（${String(e.no).padStart(4,'0')}）`;
+    if (!firstOpt) firstOpt = o;
     sel.appendChild(o);
   });
-  if (prev === 'all' || (prev !== '' && employees[parseInt(prev)])) sel.value = prev;
+  // 이전 선택 복원
+  if (prevNos.size > 0) {
+    Array.from(sel.options).forEach(o => { if (prevNos.has(o.value)) o.selected = true; });
+  }
+  // 아무것도 선택 안 됐으면 첫 번째 선택
+  if (!Array.from(sel.options).some(o => o.selected) && firstOpt) firstOpt.selected = true;
+}
+
+function selectAllAnnualEmp() {
+  const sel = document.getElementById('annualEmpSel');
+  if (!sel) return;
+  Array.from(sel.options).forEach(o => o.selected = true);
+  renderAnnual();
 }
 
 // GAS import 시 숫자값으로 저장될 수 있으므로 string/number 모두 처리
@@ -188,49 +198,50 @@ function renderAnnual() {
     return;
   }
 
-  const empSelVal = document.getElementById('annualEmpSel')?.value;
+  const sel = document.getElementById('annualEmpSel');
+  const selectedNos = Array.from(sel.selectedOptions).map(o => parseInt(o.value));
   const year = parseInt(document.getElementById('annualYearSel')?.value)||2026;
   const today = jp ? new Date().toLocaleDateString('ja-JP') : new Date().toLocaleDateString('ko-KR');
   const noDataMsg = `<div style="padding:40px;text-align:center;color:var(--text3);">${jp?'この年度のデータがありません':'이 연도의 데이터가 없습니다'}</div>`;
 
-  // ── 전사원 모드 ──
-  if (empSelVal === 'all') {
-    ph.style.display = 'none';
-    let allHtml = '';
-    let count = 0;
-    employees.forEach(emp => {
-      if (!emp || emp.no == null) return;
-      const tableHtml = buildEmpTableHtml(emp, year, jp);
-      if (!tableHtml) return;
-      const title = `${emp.name}（${String(emp.no).padStart(4,'0')}） ${year}${jp?'年度':'년도'} ${jp?'賃金台帳':'임금대장'}`;
-      const sub = (jp?`出力日：${today}`:`출력일：${today}`) + getJoinNote(emp, year, jp);
-      allHtml += `<div class="annual-emp-block${count>0?' annual-page-break':''}">` +
-        `<div style="font-size:16px;font-weight:700;margin-bottom:3px;">${title}</div>` +
-        `<div style="font-size:12px;color:#666;margin-bottom:10px;">${sub}</div>` +
-        tableHtml + `</div>`;
-      count++;
-    });
-    document.getElementById('annualContent').innerHTML = allHtml || noDataMsg;
-    return;
-  }
-
-  // ── 단일 사원 모드 ──
-  const empIdx = parseInt(empSelVal);
-  if(isNaN(empIdx)||!employees[empIdx]) {
+  if (selectedNos.length === 0) {
     ph.style.display = 'none';
     document.getElementById('annualContent').innerHTML =
       `<div style="padding:40px;text-align:center;color:var(--text3);">${jp?'従業員を選択してください':'사원을 선택해 주세요'}</div>`;
     return;
   }
-  const emp = employees[empIdx];
-  ph.style.display = 'block';
-  document.getElementById('annualPrintTitle').textContent =
-    `${emp.name}（${String(emp.no).padStart(4,'0')}） ${year}${jp?'年度':'년도'} ${jp?'賃金台帳':'임금대장'}`;
-  document.getElementById('annualPrintSub').textContent =
-    (jp?`出力日：${today}`:`출력일：${today}`) + getJoinNote(emp, year, jp);
 
-  const tableHtml = buildEmpTableHtml(emp, year, jp);
-  document.getElementById('annualContent').innerHTML = tableHtml || noDataMsg;
+  // ── 단일 사원: 기존 고정 헤더 방식 유지 ──
+  if (selectedNos.length === 1) {
+    const emp = employees.find(e => parseInt(e.no) === selectedNos[0]);
+    if (!emp) { ph.style.display='none'; document.getElementById('annualContent').innerHTML=noDataMsg; return; }
+    ph.style.display = 'block';
+    document.getElementById('annualPrintTitle').textContent =
+      `${emp.name}（${String(emp.no).padStart(4,'0')}） ${year}${jp?'年度':'년도'} ${jp?'賃金台帳':'임금대장'}`;
+    document.getElementById('annualPrintSub').textContent =
+      (jp?`出力日：${today}`:`출력일：${today}`) + getJoinNote(emp, year, jp);
+    document.getElementById('annualContent').innerHTML = buildEmpTableHtml(emp, year, jp) || noDataMsg;
+    return;
+  }
+
+  // ── 복수 사원: 인라인 헤더 + 페이지 구분 ──
+  ph.style.display = 'none';
+  let allHtml = '';
+  let count = 0;
+  selectedNos.forEach(no => {
+    const emp = employees.find(e => parseInt(e.no) === no);
+    if (!emp) return;
+    const tableHtml = buildEmpTableHtml(emp, year, jp);
+    if (!tableHtml) return;
+    const title = `${emp.name}（${String(emp.no).padStart(4,'0')}） ${year}${jp?'年度':'년도'} ${jp?'賃金台帳':'임금대장'}`;
+    const sub = (jp?`出力日：${today}`:`출력일：${today}`) + getJoinNote(emp, year, jp);
+    allHtml += `<div class="annual-emp-block${count>0?' annual-page-break':''}">` +
+      `<div style="font-size:16px;font-weight:700;margin-bottom:3px;">${title}</div>` +
+      `<div style="font-size:12px;color:#666;margin-bottom:10px;">${sub}</div>` +
+      tableHtml + `</div>`;
+    count++;
+  });
+  document.getElementById('annualContent').innerHTML = allHtml || noDataMsg;
 }
 
 // ══ HISTORY ══

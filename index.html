@@ -6,7 +6,7 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-25 23:08 — history.js: 임금대장 전사원 인쇄 기능 추가 + 인쇄 페이지 구분 CSS
+  수정: 2026-05-25 23:16 — 임금대장 복수 사원 선택 + 전체 선택 버튼 + 인쇄 스크롤바 제거
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -236,15 +236,17 @@
 <!-- ══ PAGE: ANNUAL ══ -->
 <div class="page" id="page-annual">
   <div class="no-print" style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px;gap:10px;flex-wrap:wrap;">
-    <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;">
-      <select id="annualEmpSel" onchange="renderAnnual()" style="border:1px solid var(--border);border-radius:var(--r2);padding:5px 7px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text);"></select>
+    <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;">
+      <div>
+        <select id="annualEmpSel" multiple size="4" onchange="renderAnnual()" style="border:1px solid var(--border);border-radius:var(--r2);padding:3px 6px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text);min-width:185px;display:block;"></select>
+        <div style="margin-top:4px;display:flex;align-items:center;gap:6px;">
+          <button class="btn btn-sm" onclick="selectAllAnnualEmp()"><span id="t-annual-all">全選択</span></button>
+          <span style="font-size:10.5px;color:var(--text3);" id="t-annual-hint">Ctrl+クリックで複数選択</span>
+        </div>
+      </div>
       <select id="annualYearSel" onchange="renderAnnual()" style="border:1px solid var(--border);border-radius:var(--r2);padding:5px 7px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text);">
         <option value="2026">2026年度</option><option value="2025">2025年度</option><option value="2024">2024年度</option>
       </select>
-      <button class="btn btn-primary" onclick="window.print()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-        <span id="t-annual-print">印刷 / PDF</span>
-      </button>
     </div>
   </div>
   <!-- 인쇄용 헤더 -->

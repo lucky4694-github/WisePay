@@ -229,7 +229,8 @@ body{font-family:'Noto Sans JP','Noto Sans KR',sans-serif;background:var(--bg);c
   .sidebar,.topbar,.no-print{display:none!important;}
   .content{padding:0;}
   body{background:#fff;}
-  .annual-wrap{box-shadow:none;border:1px solid #ccc;}
+  .annual-scroll-wrap{overflow:visible !important;}
+  .annual-wrap{box-shadow:none;border:1px solid #ccc;min-width:0 !important;width:100%;}
   .annual-data-row:hover{background:transparent;}
   .annual-emp-block{margin-bottom:0;}
   .annual-page-break{page-break-before:always;}

@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-25 23:08 — t-annual-print 텍스트 인쇄/PDF로 업데이트
+﻿// 수정: 2026-05-25 23:16 — t-annual-print 제거, t-annual-all/hint 추가
 'use strict';
 function setTxt(id, jp, kr) {
   const el = document.getElementById(id);
@@ -107,7 +107,8 @@ function applyLang() {
   setTxt('t-rates-ai', '協会けんぽから最新料率を取得', '협회건포에서 최신 요율 가져오기');
   setTxt('t-rates-save', '料率を保存', '요율 저장');
 
-  setTxt('t-annual-print', '印刷 / PDF', '인쇄 / PDF');
+  setTxt('t-annual-all',  '全選択', '전체 선택');
+  setTxt('t-annual-hint', 'Ctrl+クリックで複数選択', 'Ctrl+클릭으로 복수 선택');
 
   setTxt('t-history-title', '支給履歴', '지급 이력');
   setTxt('t-h-month', '月', '월');
