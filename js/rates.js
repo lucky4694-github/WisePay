@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-22 18:13 — 년월 정렬 통일 + buildHistEmpSel/buildAnnualEmpSel null 안전성
+﻿// 수정: 2026-05-23 09:20 — applyRates 3월/4월 분리, autoLoadFromGas 마이그레이션 역업로드
 'use strict';
 async function openRateModal() {
   const jp = LANG==='JP';
@@ -64,10 +64,41 @@ function applyRates() {
   if (!_pendingScrapedRates) return;
   const jp = LANG==='JP';
   const r = _pendingScrapedRates;
-  const entry = { from:r.from, kenko:r.kenko, kaigo:r.kaigo, kodomo:r.kodomo, nenkin:r.nenkin, koyo:r.koyo };
-  const existing = rateHistory.findIndex(h => h.from === r.from);
-  if(existing >= 0) rateHistory[existing] = entry;
-  else { rateHistory.push(entry); rateHistory.sort((a,b) => a.from > b.from ? 1 : -1); }
+
+  // 스크래핑 결과 from은 항상 'YYYY-03' (건강보험 개정월)
+  // 3월 항목: kenko/kaigo만 갱신. kodomo=0.00(자녀지원금은 4월~), koyo는 기존값 유지
+  const marchFrom = r.from;
+  const [fy] = marchFrom.split('-').map(Number);
+  const aprilFrom = `${fy}-04`;
+
+  const existingMarch = rateHistory.find(h => h.from === marchFrom);
+  const marchEntry = {
+    from: marchFrom,
+    kenko:  r.kenko,
+    kaigo:  r.kaigo,
+    kodomo: 0.00,   // 자녀지원금은 4월부터
+    nenkin: r.nenkin,
+    koyo:   existingMarch ? existingMarch.koyo : r.koyo,  // 기존 고용보험율 유지
+  };
+
+  // 4월 항목: 고용보험·자녀지원금 모두 갱신
+  const existingApril = rateHistory.find(h => h.from === aprilFrom);
+  const aprilEntry = {
+    from: aprilFrom,
+    kenko:  r.kenko,
+    kaigo:  r.kaigo,
+    kodomo: r.kodomo,
+    nenkin: r.nenkin,
+    koyo:   r.koyo,
+  };
+
+  [marchEntry, aprilEntry].forEach(entry => {
+    const idx = rateHistory.findIndex(h => h.from === entry.from);
+    if(idx >= 0) rateHistory[idx] = entry;
+    else rateHistory.push(entry);
+  });
+  rateHistory.sort((a,b) => a.from > b.from ? 1 : -1);
+
   saveRateHistory();
   uploadRateHistoryToGas();
   rates = { kenko:r.kenko, kaigo:r.kaigo, kodomo:r.kodomo, nenkin:r.nenkin, koyo:r.koyo };
@@ -75,7 +106,7 @@ function applyRates() {
   closeModal('modal-rates');
   _pendingScrapedRates = null;
   document.getElementById('ratesUpdatedTxt').textContent =
-    jp ? `協会けんぽ取得 ${r.from} ✓` : `협회건포 취득 ${r.from} ✓`;
+    jp ? `協会けんぽ取得 ${marchFrom}・${aprilFrom} ✓` : `협회건포 취득 ${marchFrom}·${aprilFrom} ✓`;
   showToast(jp ? `保険料率を更新しました ✓` : `보험료율 업데이트됨 ✓`, 's');
 }
 
@@ -93,29 +124,28 @@ function renderRatesPage() {
   const area=document.getElementById('ratesFormArea');
   area.innerHTML='';
 
-  // 이력 테이블
   const keys = ['kenko','kaigo','kodomo','nenkin','koyo'];
   const labels = jp
-    ? ['健康保険料率','介護保険料率','子育て支援金率','厚生年金料率','雇用保険料率']
-    : ['건강보험료율','개호보험료율','자녀지원금율','후생연금료율','고용보험료율'];
+    ? ['健康保険','介護保険','子育て支援金','厚生年金','雇用保険']
+    : ['건강보험','개호보험','자녀지원금','후생연금','고용보험'];
 
   let html = `<table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;">
     <colgroup>
-      <col style="width:20%;">
-      ${keys.map(()=>'<col style="width:14%;">').join('')}
-      <col style="width:10%;">
+      <col style="width:24%;">
+      ${keys.map(()=>'<col style="width:13%;">').join('')}
+      <col style="width:9%;">
     </colgroup>
     <thead>
       <tr style="background:var(--surface2);">
-        <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;color:var(--text2);">${jp?'適用開始月':'적용 시작월'}</th>
-        ${keys.map((k,i)=>`<th style="padding:8px 4px;text-align:center;border-bottom:1px solid var(--border);font-weight:600;color:var(--text2);font-size:11px;word-break:keep-all;line-height:1.3;">${labels[i]}</th>`).join('')}
-        <th style="padding:8px 4px;border-bottom:1px solid var(--border);"></th>
+        <th style="padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);font-weight:600;color:var(--text2);">${jp?'適用期間':'적용 기간'}</th>
+        ${keys.map((k,i)=>`<th style="padding:8px 4px;text-align:center;border-bottom:2px solid var(--border);font-weight:600;color:var(--text2);font-size:11px;word-break:keep-all;line-height:1.3;">${labels[i]}<br><span style="font-size:9px;font-weight:400;color:var(--text3);">(${jp?'労働者':'근로자'})</span></th>`).join('')}
+        <th style="padding:8px 4px;border-bottom:2px solid var(--border);"></th>
       </tr>
     </thead>
     <tbody id="rateHistoryTbody"></tbody>
   </table>
   <div style="margin-top:10px;font-size:11px;color:var(--text3);padding:6px 2px;">
-    ${jp?'※ 料率の変更は「最新料率を取得」ボタンから協会けんぽ公式サイトを参照して行ってください。':'※ 요율 변경은 상단 「최신 요율 가져오기」버튼을 통해 협회건포 공식 사이트에서 가져오세요.'}
+    ${jp?'※ 건강保険・介護保険は「最新料率を取得」ボタンで協会けんぽ公式サイトから取得できます。厚生年金・雇用保険は手動で追加してください。':'※ 건강보험·개호보험은 「최신 요율 가져오기」로 가져올 수 있습니다. 후생연금·고용보험은 직접 추가해 주세요.'}
   </div>`;
   area.innerHTML = html;
   renderRateHistoryRows();
@@ -127,23 +157,88 @@ function renderRateHistoryRows() {
   if(!tbody) return;
   const keys = ['kenko','kaigo','kodomo','nenkin','koyo'];
   tbody.innerHTML = '';
-  [...rateHistory].sort((a,b)=>a.from>b.from?-1:1).forEach((r,i) => {
-    const curApplied = getRatesForYM(currentYear, currentMonth);
-    const isCurrent = curApplied.from === r.from;
+
+  // 오래된 순 정렬 → "until" 날짜 계산, 표시는 새로운 순
+  const sorted = [...rateHistory].sort((a,b) => a.from > b.from ? 1 : -1);
+
+  // 오늘 날짜 기준 / 선택월 기준 적용 요율 (별도 계산)
+  const now = new Date();
+  const todayApplied = getRatesForYM(now.getFullYear(), now.getMonth() + 1);
+  const selApplied   = getRatesForYM(currentYear, currentMonth);
+  const selDiffersFromToday = selApplied.from !== todayApplied.from;
+
+  // 새로운 순으로 표시
+  [...sorted].reverse().forEach((r, revIdx) => {
+    const origIdx  = sorted.length - 1 - revIdx;
+    const nextEntry = sorted[origIdx + 1];
+    const prevEntry = origIdx > 0 ? sorted[origIdx - 1] : null;
+
+    const isToday = todayApplied.from === r.from;
+    const isSel   = selDiffersFromToday && selApplied.from === r.from;
+
+    // 적용 기간 "from ~ until"
+    let untilStr;
+    if (!nextEntry) {
+      untilStr = jp ? '現在' : '현재';
+    } else {
+      let [ny, nm] = nextEntry.from.split('-').map(Number);
+      nm -= 1; if (nm === 0) { nm = 12; ny -= 1; }
+      const untilYM = `${ny}-${String(nm).padStart(2,'0')}`;
+      untilStr = untilYM === r.from ? '' : (jp ? `${ny}年${nm}月` : `${ny}.${nm}`);
+    }
+    const fromFmt = jp
+      ? `${r.from.split('-')[0]}年${parseInt(r.from.split('-')[1])}月`
+      : `${r.from.split('-')[0]}.${parseInt(r.from.split('-')[1])}`;
+    const periodLabel = untilStr ? `${fromFmt} ~ ${untilStr}` : fromFmt;
+
+    // 이전 항목 대비 변경된 요율 키
+    const changed = prevEntry
+      ? keys.filter(k => Math.abs((r[k]||0) - (prevEntry[k]||0)) > 0.0001)
+      : keys;
+
+    const rowBg = isToday
+      ? 'background:var(--accent2);'
+      : isSel
+        ? 'background:#fffbe6;'
+        : (revIdx % 2 === 0 ? '' : 'background:var(--surface2);');
+
+    const badge = isToday
+      ? `<div style="font-size:10px;color:var(--accent);margin-top:1px;">${jp?'▶ 本日適用中':'▶ 오늘 기준 적용 중'}</div>`
+      : isSel
+        ? `<div style="font-size:10px;color:var(--orange);margin-top:1px;">${jp?`▶ 選択月(${currentYear}/${currentMonth})適用`:`▶ 선택월(${currentYear}/${currentMonth}) 적용`}</div>`
+        : '';
+
     const tr = document.createElement('tr');
+    tr.style.cssText = rowBg;
     tr.innerHTML = `
-      <td style="padding:6px 10px;border-bottom:1px solid var(--border2);">
-        <span style="font-size:12px;font-weight:600;display:inline-block;padding:2px 10px;border-radius:20px;${isCurrent?'background:var(--accent);color:#fff;':''}">${fmtYM(r.from)}</span>
+      <td style="padding:7px 10px;border-bottom:1px solid var(--border2);">
+        <div style="font-size:12px;font-weight:${isToday?'700':'500'};color:${isToday?'var(--accent)':isSel?'var(--orange)':'var(--text)'};">${periodLabel}</div>
+        ${badge}
       </td>
-      ${keys.map(k=>`<td style="padding:6px 4px;border-bottom:1px solid var(--border2);text-align:right;">
-        <span style="font-size:12px;font-weight:${isCurrent?'600':'400'};color:${isCurrent?'var(--accent)':'var(--text)'};">${Number(r[k]).toFixed(2)}</span>
-        <span style="font-size:10px;color:var(--text3);">%</span>
-      </td>`).join('')}
-      <td style="padding:6px 4px;border-bottom:1px solid var(--border2);text-align:center;">
+      ${keys.map(k => {
+        const isChanged = changed.includes(k);
+        const val = Number(r[k]).toFixed(2);
+        return `<td style="padding:7px 4px;border-bottom:1px solid var(--border2);text-align:right;">
+          <span style="font-size:13px;font-weight:${isToday||isChanged?'700':'400'};color:${isToday?'var(--accent)':isChanged?'var(--orange)':'var(--text)'};${isChanged&&!isToday?'border-bottom:2px solid var(--orange);padding-bottom:1px;':''}">${val}</span>
+          <span style="font-size:10px;color:var(--text3);">%</span>
+        </td>`;
+      }).join('')}
+      <td style="padding:7px 4px;border-bottom:1px solid var(--border2);text-align:center;">
         <button class="btn btn-sm" onclick="deleteRateHistoryRow(${rateHistory.indexOf(r)})" style="color:var(--red);padding:2px 6px;font-size:11px;">✕</button>
       </td>`;
     tbody.appendChild(tr);
   });
+
+  // 범례
+  const legend = document.createElement('tr');
+  legend.innerHTML = `<td colspan="${keys.length+2}" style="padding:6px 10px;font-size:10px;color:var(--text3);">
+    <span style="color:var(--accent);font-weight:700;">■</span> ${jp?'本日適用中':'오늘 기준 적용 중'}
+    &nbsp;
+    <span style="color:var(--orange);font-weight:700;">■</span> ${jp?'選択月適用':'선택월 적용'}
+    &nbsp;
+    <span style="color:var(--orange);text-decoration:underline;">0.00</span> ${jp?'前期比変更':'이전 대비 변경'}
+  </td>`;
+  tbody.appendChild(legend);
 }
 
 function addRateHistoryRow() {

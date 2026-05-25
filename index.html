@@ -1,10 +1,13 @@
 <!-- ================================================
   WisePay (給与Pro by Wisewires)
-  수정: 2026-05-22 18:13 — 년월 정렬 통일, null 안전성, gotoPage 보호
+  수정: 2026-05-24 19:56 — tax-tables.js T0[302000] 수정 + r-hyo 표준보수월액 수동지정 필드 추가
 ================================================ -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<!--
+  수정: 2026-05-24 17:56 — migrateRateHistory에서 kaigo 자동 수정 제거하여 2024-12 요율 보존
+-->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WisePay - 급여계산시스템</title>
@@ -151,8 +154,8 @@
   <!-- 미선택 플레이스홀더 -->
   <div id="payrollPlaceholder" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:var(--text3);text-align:center;">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="margin-bottom:16px;opacity:0.35;"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
-    <div style="font-size:15px;font-weight:500;margin-bottom:6px;color:var(--text2);" id="t-payroll-ph-main">직원을 선택해 주세요</div>
-    <div style="font-size:12px;" id="t-payroll-ph-sub">위 드롭다운에서 직원을 선택하면 급여 명세가 표시됩니다.</div>
+    <div style="font-size:15px;font-weight:500;margin-bottom:6px;color:var(--text2);" id="t-payroll-ph-main">사원을 선택해 주세요</div>
+    <div style="font-size:12px;" id="t-payroll-ph-sub">위 드롭다운에서 사원을 선택하면 급여 명세가 표시됩니다.</div>
   </div>
 
   <!-- EMP HEADER -->
@@ -190,7 +193,8 @@
         <div class="row"><span class="row-label" id="t-r-commutetax">課税通勤手当</span><input class="row-input" id="r-commutetax" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-kinmu')"></div>
         <div class="row"><span class="row-label" id="t-r-kinmu">勤務手当</span><input class="row-input" id="r-kinmu" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-shokumu')"></div>
         <div class="row"><span class="row-label" id="t-r-shokumu">職務手当</span><input class="row-input" id="r-shokumu" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-field')"></div>
-        <div class="row"><span class="row-label" id="t-r-field">現場手当</span><input class="row-input" id="r-field" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'k-jumin')"></div>
+        <div class="row"><span class="row-label" id="t-r-field">現場手当</span><input class="row-input" id="r-field" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-hyo')"></div>
+        <div class="row" style="background:var(--accent2);border-radius:var(--r2);"><span class="row-label" id="t-r-hyo" style="font-size:11px;color:var(--text2);">標準報酬月額<br>（手動指定・任意）</span><input class="row-input" id="r-hyo" placeholder="0=自動" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'k-jumin')" style="font-style:italic;"></div>
         <div class="row row-total"><span class="row-label" id="t-r-total">計</span><span class="row-val" id="shikyuuTotal">0</span></div>
       </div>
     </div>
@@ -247,7 +251,7 @@
     <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;">
       <select id="annualEmpSel" onchange="renderAnnual()" style="border:1px solid var(--border);border-radius:var(--r2);padding:5px 7px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text);"></select>
       <select id="annualYearSel" onchange="renderAnnual()" style="border:1px solid var(--border);border-radius:var(--r2);padding:5px 7px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text);">
-        <option value="2026">2026年</option><option value="2025">2025年</option><option value="2024">2024年</option>
+        <option value="2026">2026年度</option><option value="2025">2025年度</option><option value="2024">2024年度</option>
       </select>
       <button class="btn btn-primary" onclick="window.print()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -378,25 +382,38 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <button class="gas-sync-card gas-sync-upload" onclick="exportAllToGas()">
             <div class="gas-sync-icons">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 11l7-7 7 7"/></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
             </div>
             <div class="gas-sync-label" id="t-gas-upload-label">로컬 → Google</div>
-            <div class="gas-sync-sub" id="t-gas-upload-desc">현재 데이터를 Google에 저장</div>
+            <div class="gas-sync-sub" id="t-gas-upload-desc">현재 데이터를 구글에 저장</div>
           </button>
           <button class="gas-sync-card gas-sync-download" onclick="importAllFromGas()">
             <div class="gas-sync-icons">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 13l7 7 7-7"/></svg>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
             </div>
             <div class="gas-sync-label" id="t-gas-download-label">Google → 로컬</div>
-            <div class="gas-sync-sub" id="t-gas-download-desc">⚠️ 로컬 데이터가 덮어써집니다</div>
+            <div class="gas-sync-sub" id="t-gas-download-desc">로컬 데이터를 덮어씁니다</div>
           </button>
         </div>
         <div id="t-gas-sync-note" style="font-size:11px;color:var(--text3);margin-top:8px;"></div>
         <div id="gas-sync-status" style="margin-top:8px;font-size:12px;"></div>
+        <!-- 급여 CSV 임포트 -->
+        <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">급여 CSV → Google 시트</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="file" id="freeePayrollInput" multiple accept=".csv"
+              style="font-size:12px;flex:1;min-width:0;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:var(--bg2);cursor:pointer;">
+            <button onclick="importFreeePayrollCSV()"
+              style="flex-shrink:0;padding:6px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
+              업로드
+            </button>
+          </div>
+          <div id="freeePayrollStatus" style="margin-top:6px;font-size:12px;"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -409,7 +426,7 @@
     <div style="padding:14px 16px;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
       <div>
         <div style="font-size:13px;font-weight:600;color:#1e293b;" id="t-reset-title">로컬 데이터 초기화</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:3px;" id="t-reset-desc">직원·급여·요율 등 브라우저에 저장된 모든 데이터를 삭제합니다.</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:3px;" id="t-reset-desc">사원·급여·요율 등 브라우저에 저장된 모든 데이터를 삭제합니다.</div>
       </div>
       <button onclick="resetLocalData()" style="flex-shrink:0;padding:8px 16px;background:#fff;color:#ef4444;border:1px solid #fca5a5;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fff'">
         <span id="t-reset-btn">초기화</span>

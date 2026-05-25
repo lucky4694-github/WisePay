@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-22 16:15 — SHEET_RATE 보험요율→보험료율 수정 + renameRateSheet 추가
+// 수정: 2026-05-24 13:45 — saveSheet: 배열/객체 값 JSON 직렬화 (families "[object Object]" 버그 수정)
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -29,6 +29,30 @@ function doGet(e) {
     if      (action === 'test')                                    result = { ok: true };
     else if (action === 'getAll')                                  result = getAllData();
     else if (action === 'scrapeRates' || action === 'scrapeKenpoRates') result = scrapeKenpoRates();
+    else if (action === 'importPayrolls') {
+      let incoming = [];
+      try { incoming = JSON.parse(e.parameter.payrolls || '[]'); } catch(err) { incoming = []; }
+      if (incoming.length) {
+        const existing = sheetToObjects(getSheet(SHEET_PAY));
+        const payMap = {};
+        existing.forEach(function(p) {
+          payMap[String(parseInt(p.no)) + '_' + p.year + '_' + p.month] = p;
+        });
+        incoming.forEach(function(fp) {
+          const k = fp.no + '_' + fp.year + '_' + fp.month;
+          if (payMap[k]) { Object.assign(payMap[k], fp); } else { payMap[k] = fp; }
+        });
+        const merged = Object.values(payMap).sort(function(a, b) {
+          const nd = parseInt(a.no) - parseInt(b.no);
+          if (nd !== 0) return nd;
+          const yd = a.year - b.year;
+          if (yd !== 0) return yd;
+          return a.month - b.month;
+        });
+        saveSheet(SHEET_PAY, merged);
+      }
+      result = { ok: true, count: incoming.length };
+    }
     else result = { ok: false, error: 'Unknown action: ' + action };
   } catch(err) {
     result = { ok: false, error: err.message };
@@ -47,6 +71,35 @@ function doPost(e) {
       if (data.payrolls)    saveSheet(SHEET_PAY,  data.payrolls);
       if (data.rateHistory) saveSheet(SHEET_RATE, data.rateHistory);
       return jsonResponse({ ok: true });
+    }
+    if (data.type === 'employees') {
+      if (data.employees && data.employees.length > 0) {
+        saveSheet(SHEET_EMP, data.employees);
+      }
+      return jsonResponse({ ok: true, count: (data.employees || []).length });
+    }
+    if (data.type === 'importPayrolls') {
+      const incoming = data.payrolls || [];
+      if (incoming.length) {
+        const existing = sheetToObjects(getSheet(SHEET_PAY));
+        const payMap = {};
+        existing.forEach(function(p) {
+          payMap[String(parseInt(p.no)) + '_' + p.year + '_' + p.month] = p;
+        });
+        incoming.forEach(function(fp) {
+          const k = fp.no + '_' + fp.year + '_' + fp.month;
+          if (payMap[k]) { Object.assign(payMap[k], fp); } else { payMap[k] = fp; }
+        });
+        const merged = Object.values(payMap).sort(function(a, b) {
+          const nd = parseInt(a.no) - parseInt(b.no);
+          if (nd !== 0) return nd;
+          const yd = a.year - b.year;
+          if (yd !== 0) return yd;
+          return a.month - b.month;
+        });
+        saveSheet(SHEET_PAY, merged);
+      }
+      return jsonResponse({ ok: true, count: incoming.length });
     }
     return jsonResponse({ ok: false, error: 'Unknown type' });
   } catch(err) {
@@ -92,7 +145,12 @@ function saveSheet(name, records) {
   const sheet = getSheet(name);
   sheet.clearContents();
   const headers = [...new Set(records.flatMap(r => Object.keys(r)))];
-  const rows = [headers, ...records.map(r => headers.map(h => r[h] !== undefined ? r[h] : ''))];
+  const rows = [headers, ...records.map(r => headers.map(function(h) {
+    const v = r[h] !== undefined ? r[h] : '';
+    // 배열·객체는 JSON 문자열로 직렬화 (예: families 배열)
+    return (Array.isArray(v) || (v !== null && typeof v === 'object' && !(v instanceof Date)))
+      ? JSON.stringify(v) : v;
+  }))];
   sheet.getRange(1, 1, rows.length, headers.length).setValues(rows);
 }
 
@@ -258,18 +316,25 @@ function extractRatesFromText(text) {
   const normalized = toHankaku(text.replace(/[　\s]+/g, ' ').replace(/\s+/g, ' ').trim());
   let kenko = null;
   let kaigo = null;
+  let tokyoSegment = null;
 
-  // 「東京都」を見つけ、直後〜次の都道府県名の前までを切り出して当年度率（最後の値）を取得
+  // 「東京都」を見つけ、直後〜次の都道府県名の前までを切り出し、そのセグメント内で率を抽出
   const tokyoIdx = normalized.indexOf('東京都');
   if (tokyoIdx >= 0) {
     const afterStart = tokyoIdx + 3; // '東京都' の3文字をスキップ
     const nextPrefPos = normalized.slice(afterStart).search(/[一-鿿]+[都道府県]/);
-    const endPos = nextPrefPos > 0 ? afterStart + nextPrefPos : tokyoIdx + 150;
-    const segment = normalized.slice(tokyoIdx, endPos);
-    const nums = extractNumbers(segment).filter(v => v >= 8.0 && v <= 12.0);
-    if (nums.length > 0) kenko = nums[nums.length - 1]; // 末尾が当年度率
+    const endPos = nextPrefPos > 0 ? afterStart + nextPrefPos : Math.min(normalized.length, tokyoIdx + 250);
+    tokyoSegment = normalized.slice(tokyoIdx, endPos);
+    const tokyoNums = extractNumbers(tokyoSegment).filter(v => v >= 1.0 && v <= 12.0);
+    if (tokyoNums.length > 0) {
+      const kenkoCandidates = tokyoNums.filter(v => v >= 8.0 && v <= 12.0);
+      if (kenkoCandidates.length) kenko = kenkoCandidates[kenkoCandidates.length - 1];
+      const kaigoCandidates = tokyoNums.filter(v => v >= 1.0 && v <= 3.5 && Math.abs(v - kenko) > 0.001);
+      if (kaigoCandidates.length) kaigo = kaigoCandidates[kaigoCandidates.length - 1];
+    }
   }
-  // フォールバック
+
+  // フォールバック: 東京セグメントに値がない場合はページ全体を検索
   if (kenko == null) {
     kenko = findNumberNearKeyword(normalized, '健康保険料率|健康保険料|協会けんぽ', 8.0, 12.0, 400);
   }
@@ -278,11 +343,17 @@ function extractRatesFromText(text) {
   }
   Logger.log('健康保険料率(東京)候補: ' + kenko);
 
-  // 介護保険料率を探す
-  const kaigoPatterns = ['介護保険料率', '介護保険.*?料率', '介護保険料', '介護保険'];
-  for (const pattern of kaigoPatterns) {
-    kaigo = findNumberNearKeyword(normalized, pattern, 1.0, 3.5, 400);
-    if (kaigo != null) break;
+  if (kaigo == null && tokyoSegment) {
+    for (const pattern of ['介護保険料率', '介護保険.*?料率', '介護保険料', '介護保険']) {
+      const found = findNumberNearKeyword(tokyoSegment, pattern, 1.0, 3.5, 200);
+      if (found != null) { kaigo = found; break; }
+    }
+  }
+  if (kaigo == null) {
+    for (const pattern of ['介護保険料率', '介護保険.*?料率', '介護保険料', '介護保険']) {
+      kaigo = findNumberNearKeyword(normalized, pattern, 1.0, 3.5, 400);
+      if (kaigo != null) break;
+    }
   }
   if (kaigo == null) {
     kaigo = extractNumbers(normalized).find(v => v >= 1.0 && v <= 3.5) || null;
@@ -475,11 +546,185 @@ function migrateExtraSheets() {
   Logger.log('정리 완료');
 }
 
-// ── 보험요율데이터 → 보험료율데이터 시트 이름 수정 (한 번만 실행) ──
-function renameRateSheet() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const old = ss.getSheetByName('보험요율데이터');
-  if (!old) { Logger.log('보험요율데이터 시트 없음 — 스킵'); return; }
-  old.setName('보험료율데이터');
-  Logger.log('이름 변경 완료: 보험요율데이터 → 보험료율데이터');
+// ── 보험요율데이터 → 보험료율데이터 데이터 이전 후 삭제 (한 번만 실행) ──
+function migrateRateData() {
+  const ss  = SpreadsheetApp.getActiveSpreadsheet();
+  const src = ss.getSheetByName('보험요율데이터');
+  if (!src) { Logger.log('보험요율데이터 시트 없음 — 스킵'); return; }
+
+  const data = src.getDataRange().getValues();
+  let dst = ss.getSheetByName('보험료율데이터');
+  if (!dst) dst = ss.insertSheet('보험료율데이터');
+  dst.clearContents();
+  dst.getRange(1, 1, data.length, data[0].length).setValues(data);
+  Logger.log('이전 완료: 보험요율데이터 → 보험료율데이터 (' + (data.length - 1) + '행)');
+
+  ss.deleteSheet(src);
+  Logger.log('삭제 완료: 보험요율데이터');
+}
+
+// ── freee 사원 CSV → 사원정보 시트 임포트 (한 번만 실행) ──────────
+// 사전 준비: CSV 파일을 Google Drive 루트에 업로드
+// 파일명: -freee=employee_exports_2026_5.csv
+function importFreeeEmployees() {
+  const FILE_NAME = '-freee=employee_exports_2026_5.csv';
+  const files = DriveApp.getFilesByName(FILE_NAME);
+  if (!files.hasNext()) {
+    Logger.log('파일을 찾을 수 없음: ' + FILE_NAME);
+    Logger.log('Google Drive 루트에 CSV 파일을 업로드한 후 재실행해 주세요.');
+    return;
+  }
+
+  const csv  = files.next().getBlob().getDataAsString('UTF-8');
+  const rows = Utilities.parseCsv(csv);
+  if (rows.length < 2) { Logger.log('데이터 없음'); return; }
+
+  const headers = rows[0];
+  const col = name => headers.indexOf(name);
+
+  // freee CSV 행 → WisePay 사원 객체
+  const freeeEmps = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r     = rows[i];
+    const noStr = (r[col('従業員番号')] || '').trim();
+    if (!noStr) continue;
+    // 퇴직자 스킵
+    if ((r[col('退職日')] || '').trim() !== '') continue;
+
+    const families = [];
+    for (let f = 1; f <= 8; f++) {
+      const sei   = (r[col('家族情報' + f + ' 姓')] || '').trim();
+      const mei   = (r[col('家族情報' + f + ' 名')] || '').trim();
+      const birth = (r[col('家族情報' + f + ' 生年月日')] || '').trim();
+      const name  = [sei, mei].filter(Boolean).join(' ');
+      if (name && birth) families.push({ name: name, birth: birth });
+    }
+
+    freeeEmps.push({
+      no:         parseInt(noStr, 10),
+      name:       [(r[col('姓')] || '').trim(), (r[col('名')] || '').trim()].filter(Boolean).join(' '),
+      kana:       [(r[col('姓カナ')] || '').trim(), (r[col('名カナ')] || '').trim()].filter(Boolean).join(' '),
+      join:        r[col('入社日')]    || '',
+      birth:       r[col('生年月日')] || '',
+      kaigo:       'auto',
+      koyo:       (r[col('雇用保険に加入しているか')] || '').indexOf('加入') !== -1 ? 'yes' : 'no',
+      shotokuKbn: (r[col('所得税納税者区分')]         || '').indexOf('甲')  !== -1 ? 'ko'  : 'otsu',
+      fuyouCount:  parseInt(r[col('扶養親族等の数')]) || 0,
+      base:        0,
+      commute:     parseInt((r[col('通勤手当の金額・単価')] || '0').toString().replace(/,/g, '')) || 0,
+      families:    JSON.stringify(families),
+    });
+  }
+
+  if (!freeeEmps.length) { Logger.log('변환된 사원 없음'); return; }
+
+  // 기존 사원정보를 no 기준으로 읽어 upsert (신규 추가 + 기존 갱신)
+  const existing = sheetToObjects(getSheet(SHEET_EMP));
+  const empMap   = {};
+  existing.forEach(function(e) { empMap[parseInt(e.no)] = e; });
+  freeeEmps.forEach(function(fe) {
+    if (empMap[fe.no]) {
+      Object.assign(empMap[fe.no], fe);
+    } else {
+      empMap[fe.no] = fe;
+    }
+  });
+
+  const merged = Object.values(empMap).sort(function(a, b) { return parseInt(a.no) - parseInt(b.no); });
+  saveSheet(SHEET_EMP, merged);
+  Logger.log('임포트 완료: ' + freeeEmps.length + '명 갱신, 합계 ' + merged.length + '명 → ' + SHEET_EMP);
+}
+
+// ── freee 급여 CSV → 급여데이터 시트 임포트 ─────────────────────────────
+// 사전 준비: 3개 CSV 파일을 Google Drive 루트에 업로드
+// 검색 조건: 파일명에 "payroll_books_2026" 포함
+function importFreeePayrolls() {
+  const iter = DriveApp.searchFiles("title contains 'payroll_books_2026'");
+  const payrolls = [];
+
+  while (iter.hasNext()) {
+    const file = iter.next();
+    const csv  = file.getBlob().getDataAsString('UTF-8');
+    const rows = Utilities.parseCsv(csv);
+    if (rows.length < 2) continue;
+
+    const headers = rows[0];
+    const col = function(name) { return headers.indexOf(name); };
+
+    for (var i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      // 지급일 없는 행(빈 행) 스킵
+      const dateStr = (r[col('支給月日')] || '').toString().trim();
+      if (!dateStr) continue;
+      const parts = dateStr.split('/');
+      if (parts.length < 2) continue;
+      const year  = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      if (!year || !month) continue;
+
+      const no = parseInt((r[col('従業員番号')] || '').toString().trim(), 10);
+      if (!no) continue;
+
+      // 컬럼이 없거나 빈 값이면 0 반환
+      const gv = function(name) {
+        const idx = col(name);
+        if (idx < 0 || idx >= r.length) return 0;
+        const v = (r[idx] || '').toString().replace(/,/g, '').trim();
+        return v === '' ? 0 : (parseInt(v, 10) || 0);
+      };
+
+      payrolls.push({
+        no:             no,
+        name:           (r[col('従業員名')] || '').toString().trim(),
+        year:           year,
+        month:          month,
+        'r-base':       gv('基本給'),
+        'r-ot':         gv('時間外手当'),           // PYG는 컬럼 없음 → 0
+        'r-kintai':     gv('欠勤控除') + gv('遅刻早退控除'),
+        'r-commute':    gv('非課税通勤手当'),
+        'r-commutetax': gv('課税通勤手当'),
+        'r-kinmu':      gv('勤務手当'),             // PYG는 컬럼 없음 → 0
+        'r-shokumu':    gv('職務手当'),
+        'r-field':      0,
+        'k-jumin':      gv('住民税'),
+        'k-nencho':     gv('年末調整'),             // 年末調整精算 아닌 年末調整 사용
+        '_net':         gv('差引支給金額'),
+      });
+    }
+    Logger.log('읽기 완료: ' + file.getName());
+  }
+
+  if (!payrolls.length) {
+    Logger.log('데이터 없음 — Google Drive에 payroll_books_2026 CSV가 있는지 확인하세요.');
+    return;
+  }
+
+  // 기존 급여데이터를 no+year+month 기준으로 맵
+  const existing = sheetToObjects(getSheet(SHEET_PAY));
+  const payMap   = {};
+  existing.forEach(function(p) {
+    payMap[String(parseInt(p.no)) + '_' + p.year + '_' + p.month] = p;
+  });
+
+  // upsert: 기존 레코드는 갱신, 신규는 추가
+  payrolls.forEach(function(fp) {
+    const k = fp.no + '_' + fp.year + '_' + fp.month;
+    if (payMap[k]) {
+      Object.assign(payMap[k], fp);
+    } else {
+      payMap[k] = fp;
+    }
+  });
+
+  // no → year → month 순 정렬
+  const merged = Object.values(payMap).sort(function(a, b) {
+    const nd = parseInt(a.no) - parseInt(b.no);
+    if (nd !== 0) return nd;
+    const yd = a.year - b.year;
+    if (yd !== 0) return yd;
+    return a.month - b.month;
+  });
+
+  saveSheet(SHEET_PAY, merged);
+  Logger.log('임포트 완료: ' + payrolls.length + '건 갱신, 합계 ' + merged.length + '건 → ' + SHEET_PAY);
 }

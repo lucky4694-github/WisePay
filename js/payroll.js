@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-22 17:32 — 미선택 상태 플레이스홀더 표시 추가
+﻿// 수정: 2026-05-24 19:56 — r-hyo 표준보수월액 수동 지정: 0이면 자동계산, 양수면 우선 사용
 'use strict';
 function renderMonthTabs() {
   const c = document.getElementById('monthTabs');
@@ -27,7 +27,7 @@ function changeYear(d) {
     const msg = jp ? '保存されていない給与データがあります。このまま切り替えますか？' : '저장되지 않은 급여 데이터가 있습니다. 전환하시겠습니까?';
     if(!confirm(msg)) return;
   }
-  currentYear+=d; renderMonthTabs(); onMonthYearChange();
+  currentYear+=d; currentMonth = d < 0 ? 12 : 1; renderMonthTabs(); onMonthYearChange();
 }
 
 // 월/연도 변경 시 요율 자동 전환 + 알림
@@ -35,11 +35,13 @@ function onMonthYearChange() {
   const jp = LANG==='JP';
   const ym = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
   applyRatesForYM(currentYear, currentMonth);
-  // 해당 월에 정확히 등록된 요율이 있는지 확인
-  const exactMatch = rateHistory.find(r => r.from === ym);
+  // 최신 이력보다 이후 달을 보고 있을 때만 경고 (이력 범위 내 달은 정상 상속)
+  const sortedHistory = [...rateHistory].sort((a,b) => a.from > b.from ? 1 : -1);
+  const lastKnown = sortedHistory[sortedHistory.length - 1];
+  const isBeyondKnown = lastKnown && ym > lastKnown.from;
   const bannerEl = document.getElementById('rate-month-banner');
   if(bannerEl) {
-    if(!exactMatch) {
+    if(isBeyondKnown) {
       const applied = getRatesForYM(currentYear, currentMonth);
       const msg = jp
         ? `【要率確認】${currentYear}年${currentMonth}月の保険料率は未登録のため、${applied.from}以降の料率を適用中です。「最新要率を取得」で確認・登録してください。`
@@ -61,13 +63,13 @@ function renderEmpSelect() {
   // 미선택 옵션 항상 첫 번째에
   const blank = document.createElement('option');
   blank.value = '-1';
-  blank.textContent = jp ? '── 従業員を選択 ──' : '── 직원을 선택 ──';
+  blank.textContent = jp ? '── 従業員を選択 ──' : '── 사원 선택 ──';
   sel.appendChild(blank);
   if(!employees.length) return;
   employees.forEach((e,i) => {
     const opt = document.createElement('option');
     opt.value = i;
-    opt.textContent = `${e.name}（${String(e.no).padStart(4,'0')}）`;
+    opt.textContent = `${String(e.no).padStart(4,'0')} ${e.name}`;
     sel.appendChild(opt);
   });
   // currentEmpIdx가 유효하면 선택 유지, 아니면 미선택
@@ -229,8 +231,9 @@ function recalc() {
   const emp = employees[currentEmpIdx];
   const base=pv('r-base'),ot=pv('r-ot'),kintai=pv('r-kintai'),commute=pv('r-commute'),commutetax=pv('r-commutetax'),kinmu=pv('r-kinmu'),shokumu=pv('r-shokumu'),field=pv('r-field'),jumin=pv('k-jumin'),nencho=pv('k-nencho');
   const totalPay = base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
-  // 標準報酬月額：残業手当(ot)は変動給のため除外
-  const hyo = emp ? getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field) : 58000;
+  // 標準報酬月額：r-hyoが0より大きければ手動値を優先（随時改定・資格取得時の実際の等級）
+  const hyo_override = pv('r-hyo');
+  const hyo = hyo_override > 0 ? hyo_override : (emp ? getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field) : 58000);
   const kenko=Math.floor(hyo*rates.kenko/100/2);
   const kaigo=emp&&isKaigo(emp)?Math.floor(hyo*rates.kaigo/100/2):0;
   const kodomo=Math.floor(hyo*rates.kodomo/100/2);
@@ -288,7 +291,7 @@ function recalc() {
 
 // ══ SAVE PAYROLL ══
 function saveCurrent() {
-  if(!employees.length) { showToast(LANG==='JP'?'従業員を先に登録してください':'직원을 먼저 등록해 주세요','w'); return; }
+  if(!employees.length) { showToast(LANG==='JP'?'従業員を先に登録してください':'사원을 먼저 등록해 주세요','w'); return; }
   const emp=employees[currentEmpIdx];
   const key=`kyuyo_p_${String(emp.no).padStart(4,'0')}_${currentYear}_${currentMonth}`;
   const d={}; PFIELDS.forEach(f=>{d[f]=document.getElementById(f)?.value||0;}); d._net=window._calc?.net||0;

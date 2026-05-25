@@ -1,5 +1,19 @@
-﻿// 수정: 2026-05-22 18:13 — gotoPage history/annual try-catch 보호
+// 수정: 2026-05-24 18:35 — buildAnnualYearSel 추가: 연간 일람 연도 드롭다운 언어 대응 (년도/年度)
 'use strict';
+
+// families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
+function syncFuyouFromFamilies() {
+  let changed = false;
+  employees.forEach(emp => {
+    const cnt = Math.min((emp.families||[]).filter(f=>{
+      if(!f.birth) return false;
+      return (currentYear - parseInt(f.birth.substring(0,4))) >= 16;
+    }).length, 7);
+    if((emp.fuyouCount||0) !== cnt) { emp.fuyouCount = cnt; changed = true; }
+  });
+  if(changed) localStorage.setItem(LS.emp, JSON.stringify(employees));
+  return changed;
+}
 // ══ INIT ══
 window.addEventListener('DOMContentLoaded', () => {
   LANG = localStorage.getItem(LS.lang) || 'KR';
@@ -8,38 +22,60 @@ window.addEventListener('DOMContentLoaded', () => {
   initApp();
 });
 
+// GAS 다운로드 후에도 실행 가능한 요율 이력 마이그레이션 함수
+// 반환값: GAS 역업로드가 필요한 경우 true
+function migrateRateHistory() {
+  let migrated = false;
+  // 잘못된 항목 제거: 2026-01은 실제 보험료율 변경이 없는 달 (구버전 기본값 잔재)
+  const invalidEntries = ['2026-01'];
+  const beforeLen = rateHistory.length;
+  rateHistory = rateHistory.filter(r => !invalidEntries.includes(r.from));
+  if(rateHistory.length !== beforeLen) migrated = true;
+  // 오류 값 수정
+  rateHistory.forEach(r => {
+    if(r.from < '2026-04' && r.kodomo > 0)                      { r.kodomo = 0.00; migrated = true; }
+    if(r.from < '2026-04' && Math.abs(r.koyo  - 0.50) < 0.001) { r.koyo   = 0.55; migrated = true; }
+    // 2024년도(R6) 건강·개호보험 요율: 이전 버전에서 잘못 보정된 값 복구
+    if((r.from === '2024-03' || r.from === '2024-04') && Math.abs(r.kenko - 9.98) > 0.001) { r.kenko = 9.98; migrated = true; }
+    if((r.from === '2024-03' || r.from === '2024-04') && Math.abs(r.kaigo - 1.60) > 0.001) { r.kaigo = 1.60; migrated = true; }
+    // 2025년도(R7) 건강·개호보험 요율 보정
+    if((r.from === '2025-03' || r.from === '2025-04') && Math.abs(r.kenko - 9.91) > 0.001) { r.kenko = 9.91; migrated = true; }
+    if((r.from === '2025-03' || r.from === '2025-04') && Math.abs(r.kaigo - 1.59) > 0.001) { r.kaigo = 1.59; migrated = true; }
+  });
+  // 누락 항목 추가 (변경 시점 기준 전체 이력)
+  const defaults = [
+    { from:'2024-03', kenko:9.98, kaigo:1.60, kodomo:0.00, nenkin:18.30, koyo:0.60 },
+    { from:'2024-04', kenko:9.98, kaigo:1.60, kodomo:0.00, nenkin:18.30, koyo:0.60 },
+    { from:'2025-03', kenko:9.91, kaigo:1.59, kodomo:0.00, nenkin:18.30, koyo:0.60 },
+    { from:'2025-04', kenko:9.91, kaigo:1.59, kodomo:0.00, nenkin:18.30, koyo:0.55 },
+    { from:'2026-03', kenko:9.85, kaigo:1.62, kodomo:0.00, nenkin:18.30, koyo:0.55 },
+    { from:'2026-04', kenko:9.85, kaigo:1.62, kodomo:0.23, nenkin:18.30, koyo:0.50 },
+  ];
+  defaults.forEach(def => {
+    if(!rateHistory.find(r => r.from === def.from)) {
+      rateHistory.push({...def}); migrated = true;
+    }
+  });
+  // 중복 제거 + 정렬
+  const seenFrom = new Set();
+  const deduped = [];
+  [...rateHistory].sort((a,b)=>a.from>b.from?1:-1).reverse().forEach(r => {
+    if(!r.from || !/^\d{4}-\d{2}$/.test(r.from) || seenFrom.has(r.from)) return;
+    seenFrom.add(r.from); deduped.unshift(r);
+  });
+  if(deduped.length !== rateHistory.length) { rateHistory = deduped; migrated = true; }
+  else rateHistory.sort((a,b) => a.from > b.from ? 1 : -1);
+  if(migrated) localStorage.setItem(LS.rateHistory, JSON.stringify(rateHistory));
+  return migrated;
+}
+
 function initApp() {
   // load storage
   try { const s = localStorage.getItem(LS.emp); if(s) employees = JSON.parse(s); } catch(e){}
   try { const s = localStorage.getItem(LS.rateHistory); if(s) rateHistory = JSON.parse(s); } catch(e){}
-  // 마이그레이션: 2026-04 이전 항목의 kodomo가 0.23이면 0으로 수정
-  // 2026-01~02의 kaigo가 1.60이면 1.59로 수정 (令和7年度 실제 요율)
-  let migrated = false;
-  rateHistory.forEach(r => {
-    if(r.from < '2026-04' && r.kodomo > 0) { r.kodomo = 0.00; migrated = true; }
-    if(r.from < '2026-03' && Math.abs(r.kaigo - 1.60) < 0.001) { r.kaigo = 1.59; migrated = true; }
-  });
-  // 2026-04 항목이 없으면 추가
-  if(!rateHistory.find(r => r.from === '2026-04')) {
-    const base = rateHistory.find(r => r.from === '2026-03') || rateHistory[rateHistory.length-1];
-    if(base) {
-      rateHistory.push({ ...base, from:'2026-04', kodomo:0.23 });
-      rateHistory.sort((a,b) => a.from > b.from ? 1 : -1);
-      migrated = true;
-    }
-  }
-  // 요율 이력 정리: 빈 from 항목 제거 + 같은 from 중복 제거 (마지막 항목 우선)
-  const beforeClean = rateHistory.length;
-  const deduped = [];
-  const seenFrom = new Set();
-  [...rateHistory].sort((a,b)=>a.from>b.from?1:-1).reverse().forEach(r => {
-    if(!r.from || !/^\d{4}-\d{2}$/.test(r.from)) return;
-    if(seenFrom.has(r.from)) return;
-    seenFrom.add(r.from);
-    deduped.unshift(r);
-  });
-  if(deduped.length !== beforeClean) { rateHistory = deduped; migrated = true; }
-  if(migrated) localStorage.setItem(LS.rateHistory, JSON.stringify(rateHistory));
+  // 마이그레이션
+  syncFuyouFromFamilies();
+  migrateRateHistory();
   // 구버전 단일 rates 호환
   try { const s = localStorage.getItem(LS.rates); if(s) { const r=JSON.parse(s); rates={...rates,...r}; } } catch(e){}
   // 구버전 급여 키 마이그레이션: 비패딩 사원번호(kyuyo_p_1_...) → 4자리(kyuyo_p_0001_...)
@@ -63,7 +99,7 @@ function initApp() {
   checkRateBanner();
   updateGasStatus();
   try { buildHistEmpSel(); } catch(e) {}
-  try { buildAnnualEmpSel(); } catch(e) {}
+  try { buildAnnualYearSel(); buildAnnualEmpSel(); } catch(e) {}
   setTimeout(() => onMonthYearChange(), 100);
   // 로그인 후 Google 시트에서 최신 데이터 자동 로드
   autoLoadFromGas();
@@ -71,15 +107,21 @@ function initApp() {
 
 // 페이지 닫기/새로고침 시 미저장 경고
 window.addEventListener('beforeunload', e => {
-  if(payrollDirty) {
+  if(payrollDirty || empFormDirty) {
     e.preventDefault();
     e.returnValue = '';
   }
 });
 
 function gotoPage(id, el) {
-  // 급여명세에서 다른 페이지로 이동 시 미저장 경고
   const currentPage = document.querySelector('.page.active')?.id;
+  // 사원 편집 중 다른 페이지로 이동 시 경고
+  if(currentPage === 'page-employees' && id !== 'employees' && empFormDirty) {
+    const jp = LANG==='JP';
+    if(!confirm(jp?'保存されていない従業員情報があります。このまま移動しますか？':'저장되지 않은 사원 정보가 있습니다. 이동하시겠습니까?')) return;
+    empFormDirty = false;
+  }
+  // 급여명세에서 다른 페이지로 이동 시 미저장 경고
   if(currentPage === 'page-payroll' && id !== 'payroll' && payrollDirty) {
     const jp = LANG==='JP';
     const msg = jp
@@ -100,7 +142,7 @@ function gotoPage(id, el) {
     const sideNav = document.querySelector(`.nav-item[data-page="${id}"]`);
     if(sideNav) sideNav.classList.add('active');
   }
-  const titles = {payroll:{JP:'給与明細',KR:'급여 명세'},history:{JP:'支給履歴',KR:'지급 이력'},employees:{JP:'従業員管理',KR:'직원 관리'},rates:{JP:'保険料率設定',KR:'보험료율 설정'},annual:{JP:'年間給与一覧',KR:'연간 급여 일람'},gas:{JP:'Google連携設定',KR:'Google 연동 설정'}};
+  const titles = {payroll:{JP:'給与明細',KR:'급여 명세'},history:{JP:'支給履歴',KR:'지급 이력'},employees:{JP:'従業員管理',KR:'사원 관리'},rates:{JP:'保険料率設定',KR:'보험료율 설정'},annual:{JP:'年間給与一覧',KR:'연간 급여 일람'},gas:{JP:'Google連携設定',KR:'Google 연동 설정'}};
   const t = titles[id];
   if(t) document.getElementById('topbar-title').textContent = t[LANG];
   document.getElementById('btn-save').style.display = id==='payroll' ? '' : 'none';
@@ -108,7 +150,7 @@ function gotoPage(id, el) {
   if(id==='history') { try { buildHistEmpSel(); renderHistory(); } catch(e) { console.error('history render error:', e); } }
   if(id==='employees') renderEmpList();
   if(id==='rates') renderRatesPage();
-  if(id==='annual') { try { buildAnnualEmpSel(); renderAnnual(); } catch(e) { console.error('annual render error:', e); } }
+  if(id==='annual') { try { buildAnnualYearSel(); buildAnnualEmpSel(); renderAnnual(); } catch(e) { console.error('annual render error:', e); } }
   if(id==='gas') openGasModal();
 }
 
@@ -116,7 +158,7 @@ function resetLocalData() {
   const jp = LANG === 'JP';
   const msg = jp
     ? '⚠️ ローカルデータをすべて削除します。\n\n従業員・給与・保険料率データが消去されます。\nGoogleのデータは影響を受けません。\n\n本当に初期化しますか？'
-    : '⚠️ 로컬 데이터를 모두 삭제합니다.\n\n직원·급여·보험료율 데이터가 지워집니다.\nGoogle 시트 데이터는 영향 없습니다.\n\n정말 초기화하시겠습니까?';
+    : '⚠️ 로컬 데이터를 모두 삭제합니다.\n\n사원·급여·보험료율 데이터가 지워집니다.\nGoogle 시트 데이터는 영향 없습니다.\n\n정말 초기화하시겠습니까?';
   if (!confirm(msg)) return;
 
   // kyuyo_ 접두사 키 전체 삭제 (lang, auth 제외)
@@ -125,7 +167,7 @@ function resetLocalData() {
     .filter(k => k.startsWith('kyuyo_') && !keepKeys.has(k))
     .forEach(k => localStorage.removeItem(k));
 
-  // 직원 편집 폼 초기화 (이전 데이터가 화면에 남지 않도록)
+  // 사원 편집 폼 초기화 (이전 데이터가 화면에 남지 않도록)
   empFormDirty = false;
   cancelEmpForm();
 
