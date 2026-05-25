@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-25 23:12 — 전 입력 0이면 공제·차인지급액도 0으로 표시 (빈 폼 상태)
+﻿// 수정: 2026-05-25 23:01 — 데이터 초기화 버튼 월 2자리 고정 (레이아웃 이동 방지)
 'use strict';
 function renderMonthTabs() {
   const c = document.getElementById('monthTabs');
@@ -20,7 +20,8 @@ function renderMonthTabs() {
   }
   document.getElementById('yearTxt').textContent = currentYear + (LANG==='JP'?'年':'년');
   const delBtn = document.getElementById('t-del-month-btn');
-  if(delBtn) delBtn.textContent = LANG==='JP' ? `${currentMonth}月データをリセット` : `${currentMonth}월 데이터 초기화`;
+  const mm = String(currentMonth).padStart(2, '0');
+  if(delBtn) delBtn.textContent = LANG==='JP' ? `${mm}月データをリセット` : `${mm}월 데이터 초기화`;
 }
 
 function changeYear(d) {
