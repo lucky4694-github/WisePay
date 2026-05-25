@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-25 17:27 — 임금대장: 이름 변경 + 지급/공제 세부 항목·소계·연계열 표시
+﻿// 수정: 2026-05-25 17:44 — 임금대장: 섹션헤더 삭제 + 파스텔 소계 색상 + kintai·commutetax 제거
 'use strict';
 function buildAnnualYearSel() {
   const sel = document.getElementById('annualYearSel');
@@ -118,16 +118,14 @@ function renderAnnual() {
 
   const sumKey = key => monthData.slice(0, showCount).reduce((s,d) => s+(d?d[key]:0), 0);
 
-  // 지급 세부 — 한 달이라도 값 있는 항목만 표시 (kintai는 음수 표시)
+  // 지급 세부 — 급여 명세와 동일 항목, 한 달이라도 값 있는 것만 표시
   const payItems = [
-    {key:'base',       label:jp?'基本給':'기본급'},
-    {key:'ot',         label:jp?'残業手当':'잔업수당'},
-    {key:'kintai',     label:jp?'勤怠控除':'근태공제', neg:true},
-    {key:'commute',    label:jp?'通勤費':'통근비'},
-    {key:'commutetax', label:jp?'非課税通勤':'비과세통근'},
-    {key:'kinmu',      label:jp?'勤務手当':'근무수당'},
-    {key:'shokumu',    label:jp?'職務手当':'직무수당'},
-    {key:'field',      label:jp?'現場手当':'현장수당'},
+    {key:'base',    label:jp?'基本給':'기본급'},
+    {key:'ot',      label:jp?'残業手当':'잔업수당'},
+    {key:'commute', label:jp?'非課税通勤手当':'비과세 교통비'},
+    {key:'kinmu',   label:jp?'勤務手当':'근무수당'},
+    {key:'shokumu', label:jp?'職務手当':'직무수당'},
+    {key:'field',   label:jp?'現場手当':'현장수당'},
   ].filter(r => monthData.slice(0,showCount).some(d => d && d[r.key] > 0));
 
   // 공제 세부 — 0이 아닌 달이 하나라도 있는 항목만 표시
@@ -165,27 +163,25 @@ function renderAnnual() {
   }
   html += `<div>${jp?'年計':'연계'}</div></div>`;
 
-  // ── 지급 섹션 ──
-  html += `<div class="annual-section-head" style="${cols}"><div>${jp?'【支給】':'【지급】'}</div>${'<div></div>'.repeat(showCount+1)}</div>`;
+  // ── 지급 세부 ──
   payItems.forEach(r => {
     html += `<div class="annual-data-row" style="${cols}"><div>${r.label}</div>`;
-    for(let i=0;i<showCount;i++) html += monthData[i] ? valCell(monthData[i][r.key], r.neg) : noDataCell;
-    html += sumCell(r.key, r.neg, false) + `</div>`;
+    for(let i=0;i<showCount;i++) html += monthData[i] ? valCell(monthData[i][r.key], false) : noDataCell;
+    html += sumCell(r.key, false, false) + `</div>`;
   });
   // 지급합계
-  html += `<div class="annual-data-row annual-subtotal" style="${cols}"><div>${jp?'支給合計':'지급합계'}</div>`;
+  html += `<div class="annual-data-row annual-subtotal-pay" style="${cols}"><div>${jp?'支給合計':'지급합계'}</div>`;
   for(let i=0;i<showCount;i++) html += monthData[i] ? `<div>${fmt(monthData[i].totalPay)}</div>` : noDataCell;
   html += `<div style="font-weight:700;">${fmt(sumKey('totalPay'))}</div></div>`;
 
-  // ── 공제 섹션 ──
-  html += `<div class="annual-section-head" style="${cols}"><div>${jp?'【控除】':'【공제】'}</div>${'<div></div>'.repeat(showCount+1)}</div>`;
+  // ── 공제 세부 ──
   deductItems.forEach(r => {
     html += `<div class="annual-data-row" style="${cols}"><div>${r.label}</div>`;
     for(let i=0;i<showCount;i++) html += monthData[i] ? valCell(monthData[i][r.key], false) : noDataCell;
     html += sumCell(r.key, false, false) + `</div>`;
   });
   // 공제합계
-  html += `<div class="annual-data-row annual-subtotal" style="${cols}"><div>${jp?'控除合計':'공제합계'}</div>`;
+  html += `<div class="annual-data-row annual-subtotal-deduct" style="${cols}"><div>${jp?'控除合計':'공제합계'}</div>`;
   for(let i=0;i<showCount;i++) html += monthData[i] ? `<div>${fmt(monthData[i].totalKojo)}</div>` : noDataCell;
   html += `<div style="font-weight:700;">${fmt(sumKey('totalKojo'))}</div></div>`;
 

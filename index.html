@@ -6,7 +6,7 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-25 17:27 — 임금대장: 이름 변경 + 지급/공제 세부 항목 + 섹션 소계 + 연계열 추가
+  수정: 2026-05-25 17:44 — 급여명세: 근태공제·과세교통비 삭제 / 임금대장: 섹션헤더 삭제 + 파스텔 소계
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -187,10 +187,8 @@
       </div>
       <div>
         <div class="row"><span class="row-label" id="t-r-base">月給</span><input class="row-input" id="r-base" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-ot')"></div>
-        <div class="row"><span class="row-label" id="t-r-ot">残業手当</span><input class="row-input" id="r-ot" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-kintai')"></div>
-        <div class="row"><span class="row-label" id="t-r-kintai">勤怠控除</span><input class="row-input" id="r-kintai" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-commute')"></div>
-        <div class="row"><span class="row-label" id="t-r-commute">非課税通勤手当</span><input class="row-input" id="r-commute" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-commutetax')"></div>
-        <div class="row"><span class="row-label" id="t-r-commutetax">課税通勤手当</span><input class="row-input" id="r-commutetax" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-kinmu')"></div>
+        <div class="row"><span class="row-label" id="t-r-ot">残業手当</span><input class="row-input" id="r-ot" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-commute')"></div>
+        <div class="row"><span class="row-label" id="t-r-commute">非課税通勤手当</span><input class="row-input" id="r-commute" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-kinmu')"></div>
         <div class="row"><span class="row-label" id="t-r-kinmu">勤務手当</span><input class="row-input" id="r-kinmu" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-shokumu')"></div>
         <div class="row"><span class="row-label" id="t-r-shokumu">職務手当</span><input class="row-input" id="r-shokumu" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-field')"></div>
         <div class="row"><span class="row-label" id="t-r-field">現場手当</span><input class="row-input" id="r-field" onfocus="savePrevVal(this)" oninput="fmtInput(this);recalc()" onkeydown="focusNext(event,'r-hyo')"></div>

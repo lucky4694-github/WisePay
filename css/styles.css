@@ -205,12 +205,14 @@ body{font-family:'Noto Sans JP','Noto Sans KR',sans-serif;background:var(--bg);c
 .annual-data-row div:first-child{text-align:left;color:var(--text2);font-weight:500;}
 .annual-data-row.total-row{background:var(--surface2);font-weight:600;border-top:2px solid var(--border);}
 .annual-no-data{padding:5px 4px;color:var(--text3);}
-.annual-section-head{display:grid;font-size:10.5px;font-weight:700;background:#e6eaf4;color:var(--text2);border-bottom:1px solid var(--border);}
-.annual-section-head div{padding:4px 4px;border-right:1px solid var(--border2);}
-.annual-subtotal{background:var(--surface2) !important;border-top:1.5px solid var(--border) !important;border-bottom:1.5px solid var(--border) !important;}
-.annual-subtotal div:first-child{font-weight:700;color:var(--text);}
-.annual-net-row{background:var(--accent2) !important;border-top:2px solid var(--accent3) !important;}
-.annual-net-row div{color:var(--accent);font-weight:700;}
+.annual-subtotal-pay{background:#dff2eb !important;border-top:1.5px solid #a8d8c2 !important;border-bottom:1.5px solid #a8d8c2 !important;}
+.annual-subtotal-pay div{font-weight:700;color:#1a6845;}
+.annual-subtotal-pay div:first-child{color:#1a5c3b;}
+.annual-subtotal-deduct{background:#fef0e0 !important;border-top:1.5px solid #f5c98a !important;border-bottom:1.5px solid #f5c98a !important;}
+.annual-subtotal-deduct div{font-weight:700;color:#8a4f10;}
+.annual-subtotal-deduct div:first-child{color:#7a430c;}
+.annual-net-row{background:#e8effd !important;border-top:2px solid #b3c6f5 !important;}
+.annual-net-row div{color:#2a52b5;font-weight:700;}
 .annual-net-row div:first-child{color:var(--text);}
 @media print{
   .sidebar,.topbar,.no-print{display:none!important;}

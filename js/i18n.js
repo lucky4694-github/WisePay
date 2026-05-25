@@ -55,9 +55,7 @@ function applyLang() {
 
   setTxt('t-r-base', '月給', '월급');
   setTxt('t-r-ot', '残業手当', '잔업수당');
-  setTxt('t-r-kintai', '勤怠控除', '근태공제');
   setTxt('t-r-commute', '非課税通勤手当', '비과세 교통비');
-  setTxt('t-r-commutetax', '課税通勤手当', '과세 교통비');
   setTxt('t-r-kinmu', '勤務手当', '근무수당');
   setTxt('t-r-shokumu', '職務手当', '직무수당');
   setTxt('t-r-field', '現場手当', '현장수당');
