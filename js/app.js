@@ -1,4 +1,4 @@
-// 수정: 2026-05-26 09:44 — savePdf() 함수 추가: 현재 페이지에 맞는 파일명으로 PDF 저장
+// 수정: 2026-05-26 11:52 — savePdf() employees.find 타입 불일치 수정 (문자열/정수 혼용 문제)
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -132,7 +132,7 @@ function savePdf() {
     const year = parseInt(document.getElementById('annualYearSel')?.value) || currentYear;
     const nos = (typeof getSelectedAnnualNos === 'function') ? getSelectedAnnualNos() : [];
     if (nos.length === 1) {
-      const emp = employees.find(e => e.no === nos[0]);
+      const emp = employees.find(e => Number(e.no) === nos[0]);
       if (emp) {
         const no = String(emp.no).padStart(4, '0');
         filename = jp
