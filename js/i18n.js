@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-26 13:05 — t-backup-auto-desc: 자동 백업 설명을 UI 트리거 등록 방식으로 변경
+﻿// 수정: 2026-05-26 13:30 — t-backup-auto-desc 원복: createWeeklyBackupTrigger 정상 동작 확인
 'use strict';
 function setTxt(id, jp, kr) {
   const el = document.getElementById(id);
@@ -103,8 +103,8 @@ function applyLang() {
   setTxt('t-backup-file-desc', 'ファイル名: WisePay_backup_YYYYMMDD', '파일명: WisePay_backup_YYYYMMDD');
   setTxt('t-backup-auto-title', '📅 GAS 自動バックアップ（毎週月曜日）', '📅 GAS 자동 백업 (매주 월요일)');
   setHtml('t-backup-auto-desc',
-    'GASエディタ左側の ⏰ トリガーメニュー → 「トリガーを追加」<br>関数: <code style="background:#e0e7ff;padding:1px 4px;border-radius:3px;">backupWeekly</code> / 時間ベース / 週タイマー / 毎週月曜 / 午前9～10時<br>設定後、毎週月曜日の午前9時に別スプレッドシートへ自動バックアップされます（最大26個保持）。',
-    'GAS 편집기 왼쪽 ⏰ 트리거 메뉴 → 「트리거 추가」<br>함수: <code style="background:#e0e7ff;padding:1px 4px;border-radius:3px;">backupWeekly</code> / 시간 기반 / 주 타이머 / 매주 월요일 / 오전 9~10시<br>설정 후 매주 월요일 오전 9시에 별도 스프레드시트로 자동 백업됩니다 (최대 26개 유지).'
+    'GASエディタで <code style="background:#e0e7ff;padding:1px 4px;border-radius:3px;">createWeeklyBackupTrigger</code> を一度実行すると<br>毎週月曜日の午前9時に別のスプレッドシートへ自動バックアップされます（最大26個保持）。',
+    'GAS 편집기에서 <code style="background:#e0e7ff;padding:1px 4px;border-radius:3px;">createWeeklyBackupTrigger</code> 함수를 한 번 실행하면<br>매주 월요일 오전 9시에 별도 스프레드시트로 자동 백업됩니다 (최대 26개 유지).'
   );
 
   setTxt('t-reset-zone', '危険区域', '위험 구역');

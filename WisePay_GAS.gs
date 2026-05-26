@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-26 13:05 — createWeeklyBackupTrigger: scriptapp 권한 문제로 UI 트리거 등록 안내로 변경
+// 수정: 2026-05-26 13:30 — createWeeklyBackupTrigger 원복: appsscript.json 스코프 추가로 정상 동작 확인
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -613,13 +613,18 @@ function deleteOldBackups() {
   Logger.log((rows.length - MAX) + '개 오래된 백업 삭제');
 }
 
-// ⚠️ 이 함수는 scriptapp 권한 문제로 코드 실행 방식이 동작하지 않습니다.
-// GAS 편집기 왼쪽 ⏰ 트리거 메뉴에서 직접 등록하세요:
-//   함수: backupWeekly / 이벤트 소스: 시간 기반 / 주 타이머 / 매주 월요일 / 오전 9~10시
+// GAS 편집기에서 한 번만 실행 → 매주 월요일 오전 9시 트리거 등록
+// 사전 조건: appsscript.json에 script.scriptapp 스코프 추가 필요
 function createWeeklyBackupTrigger() {
-  Logger.log('⚠️ 코드 실행 방식은 scriptapp 권한 문제로 동작하지 않습니다.');
-  Logger.log('   GAS 편집기 왼쪽 ⏰ 트리거 메뉴 → 트리거 추가로 직접 등록하세요.');
-  Logger.log('   함수: backupWeekly / 시간 기반 / 주 타이머 / 매주 월요일 / 오전 9~10시');
+  ScriptApp.getProjectTriggers()
+    .filter(function(t) { return t.getHandlerFunction() === 'backupWeekly'; })
+    .forEach(function(t) { ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('backupWeekly')
+    .timeBased()
+    .onWeekDay(ScriptApp.WeekDay.MONDAY)
+    .atHour(9)
+    .create();
+  Logger.log('✅ 매주 월요일 오전 9시 자동 백업 트리거 설정 완료');
 }
 
 // ── 잔여 한글 시트 정리 (한 번만 실행) ───────────────────────────
