@@ -1,4 +1,4 @@
-﻿/* 수정: 2026-05-26 10:53 — 인쇄 시 .layout flex 해제 추가 (min-height:100vh로 인한 마지막 표 잘림 수정) */
+﻿/* 수정: 2026-05-26 11:47 — 인쇄 시 헤더 행 상단 라운딩 적용 + 토스트 메시지 숨김 */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
 :root {
   --bg:#f0f2f7; --surface:#fff; --surface2:#f8f9fc;
@@ -247,6 +247,10 @@ body{font-family:'Noto Sans JP','Noto Sans KR',sans-serif;background:var(--bg);c
   .annual-page-break{page-break-before:always;break-before:page;}
   /* 블록 전체가 아닌 행 단위로만 잘림 방지 (블록 전체 avoid는 블록이 페이지보다 클 때 오히려 잘림) */
   .annual-data-row{page-break-inside:avoid;break-inside:avoid;}
+  /* 헤더 행 상단 라운딩: overflow:visible 전환 시 헤더 배경이 직각으로 삐져나와 잘린 것처럼 보이는 현상 수정 */
+  .annual-head-row{border-top-left-radius:10px;border-top-right-radius:10px;}
+  /* 인쇄 중 표시된 토스트 메시지 숨김 */
+  .showToast{display:none !important;}
 }
 
 /* MODAL */
@@ -287,4 +291,4 @@ body{font-family:'Noto Sans JP','Noto Sans KR',sans-serif;background:var(--bg);c
 .showToast.show{opacity:1;transform:translateY(0);}
 .showToast.s{background:var(--green);} .showToast.e{background:var(--red);} .showToast.w{background:var(--orange);}
 
-@media print{.sidebar,.topbar,.rates-wrap,.calc-info,.btn,.banner{display:none!important;}}
+@media print{.sidebar,.topbar,.rates-wrap,.calc-info,.btn,.banner,.showToast{display:none!important;}}
