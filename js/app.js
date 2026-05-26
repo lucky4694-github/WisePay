@@ -1,4 +1,4 @@
-// 수정: 2026-05-26 11:56 — savePdf() setTimeout 추가 + 토스트로 파일명 확인
+// 수정: 2026-05-26 12:06 — savePdf() 파일명 클립보드 자동 복사 (저장 다이얼로그에서 Ctrl+V)
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -156,14 +156,22 @@ function savePdf() {
     }
   }
 
+  // 파일명을 클립보드에 복사 — 브라우저 파일 저장 다이얼로그에서 Ctrl+V로 붙여넣기 가능
+  if (filename && filename !== 'WisePay') {
+    const pdfName = filename + '.pdf';
+    navigator.clipboard.writeText(pdfName).catch(() => {});
+    showToast(
+      (jp ? `📋 ファイル名をコピーしました\n${pdfName}` : `📋 파일명 복사됨 — 저장 창에서 Ctrl+V\n${pdfName}`),
+      's'
+    );
+  }
+
   const origTitle = document.title;
-  document.title = filename;
-  showToast(`PDF: ${filename}.pdf`, 's');
-  // Chrome이 타이틀 변경을 처리할 시간을 확보한 뒤 프린트 다이얼로그 열기
+  if (filename && filename !== 'WisePay') document.title = filename;
   setTimeout(() => {
     window.addEventListener('afterprint', () => { document.title = origTitle; }, { once: true });
     window.print();
-  }, 300);
+  }, 800);
 }
 
 // 인쇄 시 스크롤바 제거 + overflow:hidden 해제 (page-break 동작 보장)
