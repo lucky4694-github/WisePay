@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-26 15:39 — 협회건포 → 協会けんぽ 표기 통일
+﻿// 수정: 2026-05-26 15:45 — nav-gas "데이터 관리"로 변경, 언어 전환 시 상단 타이틀 즉시 갱신
 'use strict';
 function setTxt(id, jp, kr) {
   const el = document.getElementById(id);
@@ -42,7 +42,7 @@ function applyLang() {
   setTxt('t-nav-emp', '従業員管理', '사원 관리');
   setTxt('t-emp-add', '+ 新規', '+ 사원 추가');
   setTxt('t-nav-rates', '保険料率設定', '보험료율 설정');
-  setTxt('t-nav-gas', '設定', '설정');
+  setTxt('t-nav-gas', 'データ管理', '데이터 관리');
 
   setTxt('t-langbtn', '한국어로 전환', '日本語に切替');
   setTxt('t-ai-btn', '協会けんぽ 最新料率を取得', '協会けんぽ 최신 요율 가져오기');
@@ -156,5 +156,15 @@ function applyLang() {
   setTxt('t-mr-apply', 'この料率を適用する', '이 요율을 적용');
 
   updateGasStatus();
+
+  // 언어 변경 시 현재 활성 페이지 상단 타이틀 즉시 갱신
+  const _ap = document.querySelector('.page.active');
+  if (_ap) {
+    const _id = _ap.id.replace('page-', '');
+    const _titles = {payroll:{JP:'給与明細',KR:'급여 명세'},history:{JP:'支給履歴',KR:'지급 이력'},employees:{JP:'従業員管理',KR:'사원 관리'},rates:{JP:'保険料率設定',KR:'보험료율 설정'},annual:{JP:'賃金台帳',KR:'임금대장'},gas:{JP:'データ管理',KR:'데이터 관리'},notifications:{JP:'通知',KR:'알림'}};
+    const _t = _titles[_id];
+    const _el = document.getElementById('topbar-title');
+    if (_t && _el) _el.textContent = _t[LANG];
+  }
 }
 
