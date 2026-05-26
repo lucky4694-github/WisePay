@@ -1,4 +1,4 @@
-// 수정: 2026-05-26 12:33 — 임금대장 파일명 형식 원복: 사원번호_사원명_임금대장_연도
+// 수정: 2026-05-26 12:39 — 불필요 코드 제거: 클립보드 복사·Ctrl+V 토스트·setTimeout
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -156,22 +156,10 @@ function savePdf() {
     }
   }
 
-  // 파일명을 클립보드에 복사 — 브라우저 파일 저장 다이얼로그에서 Ctrl+V로 붙여넣기 가능
-  if (filename && filename !== 'WisePay') {
-    const pdfName = filename + '.pdf';
-    navigator.clipboard.writeText(pdfName).catch(() => {});
-    showToast(
-      (jp ? `📋 ファイル名をコピーしました\n${pdfName}` : `📋 파일명 복사됨 — 저장 창에서 Ctrl+V\n${pdfName}`),
-      's'
-    );
-  }
-
   const origTitle = document.title;
   document.title = filename;
-  setTimeout(() => {
-    window.addEventListener('afterprint', () => { document.title = origTitle; }, { once: true });
-    window.print();
-  }, 800);
+  window.addEventListener('afterprint', () => { document.title = origTitle; }, { once: true });
+  window.print();
 }
 
 // 인쇄 시 스크롤바 제거 + overflow:hidden 해제 (page-break 동작 보장)
