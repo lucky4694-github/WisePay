@@ -140,7 +140,11 @@ function savePdf() {
           : `${no}_${emp.name}_임금대장_${year}년도`;
       }
     } else if (nos.length > 1) {
-      filename = jp ? `賃金台帳_${year}年度` : `임금대장_${year}년도`;
+      const isAll = nos.length === employees.length;
+      const prefix = isAll ? (jp ? '全従業員' : '전사원') : '';
+      filename = jp
+        ? `${prefix ? prefix + '_' : ''}賃金台帳_${year}年度`
+        : `${prefix ? prefix + '_' : ''}임금대장_${year}년도`;
     }
   } else if (activePage === 'page-employees' && editingEmpIdx >= 0) {
     const emp = employees[editingEmpIdx];
