@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-26 13:30 — t-backup-auto-desc 원복: createWeeklyBackupTrigger 정상 동작 확인
+﻿// 수정: 2026-05-26 14:10 — t-nav-gas "설정"으로 변경, 동기화 설명 "덮어씁니다"로 수정
 'use strict';
 function setTxt(id, jp, kr) {
   const el = document.getElementById(id);
@@ -42,7 +42,7 @@ function applyLang() {
   setTxt('t-nav-emp', '従業員管理', '사원 관리');
   setTxt('t-emp-add', '+ 新規', '+ 사원 추가');
   setTxt('t-nav-rates', '保険料率設定', '보험료율 설정');
-  setTxt('t-nav-gas', 'Google連携設定', 'Google 연동 설정');
+  setTxt('t-nav-gas', '設定', '설정');
 
   setTxt('t-langbtn', '한국어로 전환', '日本語に切替');
   setTxt('t-ai-btn', '協会けんぽ 最新料率を取得', '협회건포 최신 요율 가져오기');
@@ -93,9 +93,9 @@ function applyLang() {
   setTxt('t-gas-step4-title', 'WebアプリのURLを入力', '웹 앱 URL 입력');
   setTxt('t-gas-sync-title', 'データ同期', '데이터 동기화');
   setTxt('t-gas-upload-label', 'ローカル → Google', '로컬 → Google');
-  setTxt('t-gas-upload-desc', '現在のデータをGoogleに保存', '현재 데이터를 구글에 저장');
+  setTxt('t-gas-upload-desc', 'ローカルデータをGoogleに上書きします', '로컬 데이터를 구글에 덮어씁니다');
   setTxt('t-gas-download-label', 'Google → ローカル', 'Google → 로컬');
-  setTxt('t-gas-download-desc', 'ローカルデータを上書きします', '로컬 데이터를 덮어씁니다');
+  setTxt('t-gas-download-desc', 'Googleデータをローカルに上書きします', '구글 데이터를 로컬에 덮어씁니다');
   setTxt('t-gas-sync-note', '※ 初回は「ローカル → Google」で既存データをアップロードしてください', '※ 초회는 「로컬 → Google」로 기존 데이터를 업로드해 주세요');
   setTxt('t-backup-title', '手動バックアップ', '수동 백업');
   setTxt('t-backup-json-btn', '📄 JSONバックアップ', '📄 JSON 백업');

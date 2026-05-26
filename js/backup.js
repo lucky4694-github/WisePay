@@ -1,4 +1,4 @@
-// 수정: 2026-05-26 13:40 — showSaveFilePicker API 도입으로 다운로드 후 페이지 이동 완전 방지
+// 수정: 2026-05-26 14:10 — 다운로드 전 sessionStorage에 현재 페이지 저장 → 리로드 후 복원
 'use strict';
 
 function _backupDateStr() {
@@ -65,6 +65,7 @@ async function _triggerDownload(blob, filename) {
 }
 
 async function downloadBackupJson() {
+  sessionStorage.setItem('wisepay_restore_page', 'gas');
   const date = _backupDateStr();
   const data = {
     exportedAt: new Date().toISOString(),
@@ -80,6 +81,7 @@ async function downloadBackupJson() {
 }
 
 async function downloadBackupExcel() {
+  sessionStorage.setItem('wisepay_restore_page', 'gas');
   if (typeof XLSX === 'undefined') {
     showToast(LANG === 'JP' ? 'Excelライブラリ読み込み中... 少々お待ちください' : 'Excel 라이브러리 로딩 중... 잠시 후 다시 시도해 주세요', 'w');
     return;

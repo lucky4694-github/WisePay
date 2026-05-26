@@ -1,4 +1,4 @@
-// 수정: 2026-05-26 12:39 — 불필요 코드 제거: 클립보드 복사·Ctrl+V 토스트·setTimeout
+// 수정: 2026-05-26 14:10 — initApp: 백업 다운로드 후 리로드 시 이전 페이지 복원 (sessionStorage)
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -105,6 +105,13 @@ function initApp() {
   autoLoadFromGas();
   // 월요일 접속 시 수동 백업 알림
   checkBackupReminder();
+  // 백업 다운로드 후 리로드 시 이전 페이지 복원
+  const _rp = sessionStorage.getItem('wisepay_restore_page');
+  if (_rp) {
+    sessionStorage.removeItem('wisepay_restore_page');
+    const _nav = document.querySelector(`.nav-item[data-page="${_rp}"]`);
+    setTimeout(() => gotoPage(_rp, _nav), 150);
+  }
 }
 
 // 페이지 닫기/새로고침 시 미저장 경고
