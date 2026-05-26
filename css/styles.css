@@ -228,7 +228,7 @@ body{font-family:'Noto Sans JP','Noto Sans KR',sans-serif;background:var(--bg);c
 /* @page margin으로 모든 페이지에 여백 적용 (margin:0 + content padding은 첫/마지막만 적용되어 잘림 발생) */
 @page{margin:8mm 10mm;}
 @media print{
-  .sidebar,.topbar,.no-print{display:none!important;}
+  .sidebar,.topbar,.no-print,.month-nav{display:none!important;}
   /* @page margin이 여백을 담당하므로 content 패딩 제거 */
   .content{padding:0;overflow:visible !important;height:auto !important;}
   body{background:#fff;padding:0;}
@@ -292,4 +292,4 @@ body{font-family:'Noto Sans JP','Noto Sans KR',sans-serif;background:var(--bg);c
 .showToast.show{opacity:1;transform:translateY(0);}
 .showToast.s{background:var(--green);} .showToast.e{background:var(--red);} .showToast.w{background:var(--orange);}
 
-@media print{.sidebar,.topbar,.rates-wrap,.calc-info,.btn,.banner,.showToast{display:none!important;}}
+@media print{.sidebar,.topbar,.rates-wrap,.calc-info,.btn,.banner,.showToast,.month-nav{display:none!important;}}
