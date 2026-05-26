@@ -1,4 +1,4 @@
-// 수정: 2026-05-26 16:01 — autoLoadFromGas 배경 동기화 토스트 제거
+// 수정: 2026-05-26 23:20 — autoLoadFromGas: PFIELD 포맷 로컬 데이터 보호 (GAS 집계값으로 덮어쓰기 방지)
 'use strict';
 async function exportAllToGas() {
   if (!gasUrl) {
@@ -361,7 +361,16 @@ async function autoLoadFromGas() {
     if (d.payrolls && d.payrolls.length > 0) {
       d.payrolls.forEach(p => {
         const pNo = String(p.no).padStart(4, '0');
-        localStorage.setItem('kyuyo_p_' + pNo + '_' + p.year + '_' + p.month, JSON.stringify(p));
+        const key = 'kyuyo_p_' + pNo + '_' + p.year + '_' + p.month;
+        // 로컬에 PFIELD 포맷 데이터(r-base 등 입력값)가 있으면 GAS 집계값으로 덮어쓰지 않음
+        const existing = localStorage.getItem(key);
+        if (existing) {
+          try {
+            const ex = JSON.parse(existing);
+            if (PFIELDS.some(f => f in ex)) return;
+          } catch(e) {}
+        }
+        localStorage.setItem(key, JSON.stringify(p));
       });
     }
     if (d.rateHistory && d.rateHistory.length > 0) {
