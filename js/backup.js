@@ -1,4 +1,4 @@
-// 수정: 2026-05-25 23:48 — 백업 기능: JSON/Excel 다운로드 + 월요일 미백업 알림
+// 수정: 2026-05-26 13:15 — downloadBackupJson: revokeObjectURL 지연 처리로 다운로드 중 페이지 리로드 방지
 'use strict';
 
 function _backupDateStr() {
@@ -44,15 +44,15 @@ function downloadBackupJson() {
     payrolls: collectAllPayrolls(),
     rateHistory,
   };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/octet-stream' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = 'WisePay_backup_' + date + '.json';
+  a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
   _markBackupDone();
   showToast(LANG === 'JP' ? 'JSONバックアップ完了 ✓' : 'JSON 백업 다운로드 완료 ✓', 's');
 }
