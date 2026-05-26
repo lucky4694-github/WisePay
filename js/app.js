@@ -168,12 +168,21 @@ window.addEventListener('beforeprint', () => {
     el.style.overflow = 'visible';
     el.style.minWidth = '0';
   });
+  // flex 컨테이너 해제: min-height:100vh가 content 높이를 1페이지로 제한 → 마지막 표 잘림
+  const layout = document.querySelector('.layout');
+  if (layout) { layout.style.display = 'block'; layout.style.minHeight = '0'; layout.style.height = 'auto'; }
+  const content = document.querySelector('.content');
+  if (content) { content.style.overflow = 'visible'; content.style.height = 'auto'; }
 });
 window.addEventListener('afterprint', () => {
   document.querySelectorAll('.annual-scroll-wrap, .annual-wrap').forEach(el => {
     el.style.overflow = '';
     el.style.minWidth = '';
   });
+  const layout = document.querySelector('.layout');
+  if (layout) { layout.style.display = ''; layout.style.minHeight = ''; layout.style.height = ''; }
+  const content = document.querySelector('.content');
+  if (content) { content.style.overflow = ''; content.style.height = ''; }
 });
 
 function gotoPage(id, el) {

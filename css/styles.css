@@ -1,4 +1,4 @@
-﻿/* 수정: 2026-05-26 10:07 — @page margin 적용 + 스크롤바 전역 제거 + 행 단위 잘림 방지로 수정 */
+﻿/* 수정: 2026-05-26 10:53 — 인쇄 시 .layout flex 해제 추가 (min-height:100vh로 인한 마지막 표 잘림 수정) */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
 :root {
   --bg:#f0f2f7; --surface:#fff; --surface2:#f8f9fc;
@@ -232,6 +232,8 @@ body{font-family:'Noto Sans JP','Noto Sans KR',sans-serif;background:var(--bg);c
   /* @page margin이 여백을 담당하므로 content 패딩 제거 */
   .content{padding:0;overflow:visible !important;height:auto !important;}
   body{background:#fff;padding:0;}
+  /* flex 컨테이너 해제 — min-height:100vh가 content 높이를 1페이지로 제한하여 마지막 표 잘림 발생 */
+  .layout{display:block !important;min-height:0 !important;height:auto !important;}
   /* 모든 스크롤바 완전 제거 */
   html,body{overflow:hidden !important;}
   *::-webkit-scrollbar{display:none !important;width:0 !important;height:0 !important;}
