@@ -1,4 +1,4 @@
-// 수정: 2026-05-26 12:06 — savePdf() 파일명 클립보드 자동 복사 (저장 다이얼로그에서 Ctrl+V)
+// 수정: 2026-05-26 12:27 — savePdf() parseInt로 통일 + document.title 항상 세팅
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -132,7 +132,7 @@ function savePdf() {
     const year = parseInt(document.getElementById('annualYearSel')?.value) || currentYear;
     const nos = (typeof getSelectedAnnualNos === 'function') ? getSelectedAnnualNos() : [];
     if (nos.length === 1) {
-      const emp = employees.find(e => Number(e.no) === nos[0]);
+      const emp = employees.find(e => parseInt(e.no) === nos[0]);
       if (emp) {
         const no = String(emp.no).padStart(4, '0');
         filename = jp
@@ -167,7 +167,7 @@ function savePdf() {
   }
 
   const origTitle = document.title;
-  if (filename && filename !== 'WisePay') document.title = filename;
+  document.title = filename;
   setTimeout(() => {
     window.addEventListener('afterprint', () => { document.title = origTitle; }, { once: true });
     window.print();
