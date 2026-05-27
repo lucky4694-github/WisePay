@@ -1,12 +1,11 @@
 <!-- ================================================
   WisePay (給与Pro by Wisewires)
-  수정: 2026-05-26 22:55 — Undo/Redo 기능 구현 (undo.js 신규, 급여 셀 onblur, 사원 소프트 삭제)
 ================================================ -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-27 10:18 — backup.js: 백업/복원을 사원/급여 두 종류로 분리
+  수정: 2026-05-27 11:02 — Undo/Redo 기능 전체 제거 (undo.js 삭제, 하드삭제 복원)
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -550,7 +549,6 @@
 <script src="js/i18n.js"></script>
 <script src="js/tax-tables.js"></script>
 
-<script src="js/undo.js"></script>
 <script src="js/payroll.js"></script>
 <script src="js/rates.js"></script>
 <script src="js/employees.js"></script>

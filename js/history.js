@@ -1,4 +1,4 @@
-// 수정: 2026-05-27 10:08 — filterAnnualEmpList: display '' → 'flex' 수정 (항목 세로 나열 복구)
+// 수정: 2026-05-27 11:02 — Undo/Redo 제거: deleted 플래그 참조 삭제
 'use strict';
 function buildAnnualYearSel() {
   const sel = document.getElementById('annualYearSel');
@@ -27,12 +27,11 @@ function buildAnnualEmpSel() {
   employees.forEach(e => {
     if (!e || e.no == null) return;
     const noStr = String(e.no);
-    const checked = isFirstBuild ? (firstActive && !e.deleted) : prevNos.has(noStr);
-    if (isFirstBuild && !e.deleted && firstActive) firstActive = false;
+    const checked = isFirstBuild ? firstActive : prevNos.has(noStr);
+    if (isFirstBuild && firstActive) firstActive = false;
     const label = document.createElement('label');
     label.dataset.no = noStr;
     label.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 6px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;user-select:none;';
-    if (e.deleted) label.style.opacity = '0.45';
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.value = noStr;
@@ -130,7 +129,7 @@ function selectActiveOnlyAnnual() {
     const no = label.dataset.no || '';
     const emp = employees.find(e => String(e.no) === no);
     const cb = label.querySelector('input[type="checkbox"]');
-    if (cb) cb.checked = emp ? !emp.deleted : false;
+    if (cb) cb.checked = !!emp;
   });
   updateAnnualSelSummary();
 }

@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-26 23:55 — loadPayrollForm: _hasPF 수정(빈값·0 제외) + _loadGasApprox 추가 → 과거/미래 월 초기값 로직 개선
+﻿// 수정: 2026-05-27 11:02 — Undo/Redo 제거: deleted 체크·pushAction·insertSaveMarker 삭제
 'use strict';
 function renderMonthTabs() {
   const c = document.getElementById('monthTabs');
@@ -61,13 +61,12 @@ function renderEmpSelect() {
   sel.appendChild(blank);
   if(!employees.length) return;
   employees.forEach((e,i) => {
-    if(e.deleted) return;
     const opt = document.createElement('option');
     opt.value = i;
     opt.textContent = `${String(e.no).padStart(4,'0')} ${e.name}`;
     sel.appendChild(opt);
   });
-  const validIdx = currentEmpIdx >= 0 && currentEmpIdx < employees.length && !employees[currentEmpIdx]?.deleted;
+  const validIdx = currentEmpIdx >= 0 && currentEmpIdx < employees.length;
   sel.value = validIdx ? currentEmpIdx : '-1';
 }
 function onEmpChange() {
@@ -101,8 +100,8 @@ function loadPayrollForm() {
   };
 
   const ph = document.getElementById('payrollPlaceholder');
-  // 미선택 또는 삭제된 사원 상태
-  if(currentEmpIdx < 0 || !employees.length || employees[currentEmpIdx]?.deleted) {
+  // 미선택 상태
+  if(currentEmpIdx < 0 || !employees.length) {
     showContent(false);
     if(ph) ph.style.display = '';
     payrollDirty = false;
@@ -262,28 +261,7 @@ function savePrevVal(input) {
   if(input.value === '0') input.value = '';
 }
 
-// 포커스 이탈 시 값이 변경됐으면 undo 액션 등록
-function onPayrollBlur(input) {
-  const before = prevValues[input.id];
-  if (before === undefined) return;
-  const norm = v => {
-    const n = parseInt(String(v == null ? '0' : v).replace(/,/g, '')) || 0;
-    return n === 0 ? '' : n.toLocaleString();
-  };
-  if (norm(before) === norm(input.value)) return;
-  if (!employees.length || currentEmpIdx < 0 || currentEmpIdx >= employees.length) return;
-  const emp = employees[currentEmpIdx];
-  if (!emp || emp.deleted) return;
-  pushAction({
-    type:   'edit',
-    empNo:  emp.no,
-    year:   currentYear,
-    month:  currentMonth,
-    col:    input.id,
-    before: norm(before),
-    after:  norm(input.value),
-  });
-}
+function onPayrollBlur(input) {}
 
 // 반각 스페이스로 변환 (일본어 입력 시 전각 스페이스 → 반각)
 function toHalfSpace(str) {
@@ -412,9 +390,6 @@ function saveCurrent() {
   payrollDirty = false;
   const saveBtn = document.getElementById('btn-save');
   if(saveBtn) { saveBtn.style.background = ''; saveBtn.style.borderColor = ''; }
-
-  // 저장 시점 마커 삽입 (Undo/Redo에서 저장 전/후를 구분)
-  insertSaveMarker();
 
   if(gasUrl && window._calc) {
     const c=window._calc;

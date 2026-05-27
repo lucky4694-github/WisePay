@@ -1,18 +1,15 @@
-﻿// 수정: 2026-05-27 10:12 — 사원 폼에 퇴사일(f-leave) 필드 추가 (입사일 다음, 선택 입력)
+﻿// 수정: 2026-05-27 11:02 — Undo/Redo 제거: deleted 플래그·pushAction 삭제, deleteEmp 하드삭제 복원
 'use strict';
 function renderEmpList() {
   const body=document.getElementById('empListBody');
   const title=document.getElementById('empListTitle');
-  const activeCount = employees.filter(e => !e.deleted).length;
-  title.textContent=(LANG==='JP'?`従業員一覧（${activeCount}名）`:`사원 목록（${activeCount}명）`);
+  title.textContent=(LANG==='JP'?`従業員一覧（${employees.length}名）`:`사원 목록（${employees.length}명）`);
   body.innerHTML='';
-  const hasActive = employees.some(e => !e.deleted);
-  if(!hasActive) {
+  if(!employees.length) {
     body.innerHTML=`<div class="emp-list-empty">${LANG==='JP'?'従業員が登録されていません':'등록된 사원이 없습니다'}</div>`;
     return;
   }
   employees.forEach((emp,i)=>{
-    if(emp.deleted) return;
     const item=document.createElement('div');
     item.className='emp-list-item'+(i===editingEmpIdx?' active':'');
     const famCnt=countFamilies(emp);
@@ -750,7 +747,6 @@ function saveEmployee() {
   if(editingEmpIdx===-1) {
     employees.push(empData);
     editingEmpIdx = employees.length - 1;
-    pushAction({ type: 'addRow', empNo: empData.no, snapshot: { ...empData } });
   } else {
     const oldNo = employees[editingEmpIdx].no;
     employees[editingEmpIdx] = empData;
@@ -793,16 +789,16 @@ function deleteEmp(i) {
   const emp=employees[i];
   const msg=LANG==='JP'?`${emp.name} を削除しますか？`:`${emp.name}을(를) 삭제하시겠습니까?`;
   if(!confirm(msg)) return;
-  const snapshot = { ...emp };
-  employees[i] = { ...emp, deleted: true };
+  employees.splice(i, 1);
   localStorage.setItem(LS.emp, JSON.stringify(employees));
-  pushAction({ type: 'deleteEmployee', empNo: emp.no, snapshot });
   if(currentEmpIdx === i) {
     currentEmpIdx = -1;
     loadPayrollForm();
+  } else if(currentEmpIdx > i) {
+    currentEmpIdx--;
   }
   renderEmpSelect(); renderEmpList(); cancelEmpForm();
-  showToast(LANG==='JP'?'削除しました (Ctrl+Z で復元可)':'삭제됨 (Ctrl+Z로 복원 가능)');
+  showToast(LANG==='JP'?'削除しました':'삭제되었습니다');
 }
 
 
