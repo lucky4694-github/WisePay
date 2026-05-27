@@ -1,4 +1,4 @@
-// 수정: 2026-05-27 15:12 — requestPermission 제거 + showDirectoryPicker 전 sessionStorage 복원키 설정
+// 수정: 2026-05-27 15:45 — 백업 함수 시작 시 sessionStorage 복원키 설정 (리로드 시 gas 페이지 복귀 보장)
 'use strict';
 
 /* ── 날짜 유틸 ── */
@@ -225,22 +225,24 @@ async function clearBackupFolder() {
 
 /* ── 사원 백업 ── */
 async function downloadEmpBackupJson() {
+  sessionStorage.setItem('wisepay_restore_page', 'gas');
   const filename = '사원_backup_' + _backupDateStr() + '.json';
   const data = { exportedAt: new Date().toISOString(), employees };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const ok = await _saveWithFolder(blob, filename);
-  if (!ok) return;
+  if (!ok) { sessionStorage.removeItem('wisepay_restore_page'); return; }
   _markBackupDone();
   showToast(LANG === 'JP' ? '従業員バックアップ完了 ✓' : '사원 백업 완료 ✓', 's');
 }
 
 /* ── 급여 백업 ── */
 async function downloadPayBackupJson() {
+  sessionStorage.setItem('wisepay_restore_page', 'gas');
   const filename = '급여_backup_' + _backupDateStr() + '.json';
   const data = { exportedAt: new Date().toISOString(), payrolls: collectAllPayrolls(), rateHistory };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const ok = await _saveWithFolder(blob, filename);
-  if (!ok) return;
+  if (!ok) { sessionStorage.removeItem('wisepay_restore_page'); return; }
   _markBackupDone();
   showToast(LANG === 'JP' ? '給与バックアップ完了 ✓' : '급여 백업 완료 ✓', 's');
 }
@@ -349,6 +351,7 @@ async function downloadBackupExcel() {
     showToast(LANG === 'JP' ? 'Excelライブラリ読み込み中... 少々お待ちください' : 'Excel 라이브러리 로딩 중... 잠시 후 다시 시도해 주세요', 'w');
     return;
   }
+  sessionStorage.setItem('wisepay_restore_page', 'gas');
   const filename = 'WisePay_backup_' + _backupDateStr() + '.xlsx';
   const wb = XLSX.utils.book_new();
   const empData = employees.length ? employees.map(e => ({ ...e, families: JSON.stringify(e.families || []) })) : [{}];
@@ -359,7 +362,7 @@ async function downloadBackupExcel() {
   const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const ok = await _saveWithFolder(blob, filename);
-  if (!ok) return;
+  if (!ok) { sessionStorage.removeItem('wisepay_restore_page'); return; }
   _markBackupDone();
   showToast(LANG === 'JP' ? 'Excelバックアップ完了 ✓' : 'Excel 백업 완료 ✓', 's');
 }
