@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-27 23:30 — 사원 추가/수정/삭제 시 gasAppendLog 로그 기록 추가
+﻿// 수정: 2026-05-27 23:45 — 생년월일 옆 나이 자동 표시 추가
 'use strict';
 function renderEmpList() {
   const body=document.getElementById('empListBody');
@@ -166,8 +166,16 @@ function renderEmpFormFields(emp) {
       </div>
       <input class="form-input" id="f-birth" type="text" value="${normalizeDate(v('birth'))}"
         placeholder="YYYY-MM-DD" autocomplete="off" data-required="1"
-        onfocus="onDateFocus(this)" onblur="onDateBlur(this,'f-birth-err')"
+        onfocus="onDateFocus(this)" onblur="onDateBlur(this,'f-birth-err');updateAgeDisplay()"
         onkeydown="onDateKeydown(event,'f-kaigo','f-birth-err')" oninput="onDateInput(this)">
+    </div>
+    <div class="form-group">
+      <div class="form-label-block">
+        <div class="form-label-row">
+          <label class="form-label">${jp?'年齢':'나이'}</label>
+        </div>
+      </div>
+      <div id="f-age-display" style="display:flex;align-items:center;height:38px;padding:0 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;font-size:15px;font-weight:700;color:var(--text2);">${calcAgeStr(normalizeDate(v('birth')), jp)}</div>
     </div>
     <div class="form-group">
       <div class="form-label-block">
@@ -611,6 +619,25 @@ function padEmpNo(input) {
 // 전각 숫자(０１２３) → 반각
 function toHalfDigits(str) {
   return String(str).replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+}
+
+// ══ AGE DISPLAY ══
+function calcAgeStr(birthStr, jp) {
+  if (!birthStr || !/^\d{4}-\d{2}-\d{2}$/.test(birthStr)) return '—';
+  const today = new Date();
+  const birth = new Date(birthStr);
+  if (isNaN(birth.getTime())) return '—';
+  let age = today.getFullYear() - birth.getFullYear();
+  const md = today.getMonth() - birth.getMonth();
+  if (md < 0 || (md === 0 && today.getDate() < birth.getDate())) age--;
+  return age >= 0 ? `${age}${jp ? '歳' : '세'}` : '—';
+}
+
+function updateAgeDisplay() {
+  const birthEl = document.getElementById('f-birth');
+  const ageEl   = document.getElementById('f-age-display');
+  if (!birthEl || !ageEl) return;
+  ageEl.textContent = calcAgeStr(birthEl.value, LANG === 'JP');
 }
 
 // ══ EMP NO VALIDATION ══
