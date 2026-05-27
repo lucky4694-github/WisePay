@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-27 17:31 — 임금대장 팝업 left:0 수정·헤더 제목 왼쪽/출력일 오른쪽 정렬
+  수정: 2026-05-27 17:38 — 임금대장 확인 버튼 소형·가운데 정렬·연도↔사원 선택 순서 교환
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -235,6 +235,9 @@
 <div class="page" id="page-annual">
   <div class="no-print" style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:12px;gap:10px;flex-wrap:wrap;">
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <select id="annualYearSel" onchange="renderAnnual()" style="border:1px solid var(--border);border-radius:var(--r2);padding:5px 7px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text);">
+        <option value="2026">2026年度</option><option value="2025">2025年度</option><option value="2024">2024年度</option>
+      </select>
       <!-- 인라인 드롭다운 사원 선택 -->
       <div style="position:relative;" id="annualEmpDropWrap">
         <button class="btn" id="annualEmpDropBtn" onclick="toggleAnnualEmpDrop(event)" style="display:flex;align-items:center;gap:5px;">
@@ -253,14 +256,11 @@
             <button class="btn btn-sm" onclick="selectActiveOnlyAnnual()"><span id="t-annual-sel-active">在職者のみ</span></button>
           </div>
           <div id="annualEmpCheckList" style="max-height:220px;overflow-y:auto;border-top:1px solid var(--border);padding-top:4px;"></div>
-          <div style="padding-top:8px;border-top:1px solid var(--border);margin-top:8px;">
-            <button class="btn btn-primary" onclick="closeAnnualEmpDrop()" style="width:100%;font-size:13px;" id="t-annual-confirm">확인</button>
+          <div style="padding-top:8px;border-top:1px solid var(--border);margin-top:8px;text-align:center;">
+            <button class="btn btn-primary" onclick="closeAnnualEmpDrop()" style="font-size:12px;padding:5px 28px;" id="t-annual-confirm">확인</button>
           </div>
         </div>
       </div>
-      <select id="annualYearSel" onchange="renderAnnual()" style="border:1px solid var(--border);border-radius:var(--r2);padding:5px 7px;font-size:12.5px;font-family:inherit;background:var(--surface);color:var(--text);">
-        <option value="2026">2026年度</option><option value="2025">2025年度</option><option value="2024">2024年度</option>
-      </select>
     </div>
   </div>
   <!-- 미선택 플레이스홀더 -->
