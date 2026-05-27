@@ -1,4 +1,4 @@
-// 수정: 2026-05-27 17:20 — 임금대장 컨트롤 왼쪽·헤더 오른쪽 정렬, 사원선택 확인 버튼 추가
+// 수정: 2026-05-27 22:55 — 재직자만: 퇴사일이 오늘 이전인 사원 제외
 'use strict';
 function buildAnnualYearSel() {
   const sel = document.getElementById('annualYearSel');
@@ -124,11 +124,12 @@ function clearAllAnnualEmps() {
   updateAnnualSelSummary();
 }
 function selectActiveOnlyAnnual() {
+  const today = new Date().toISOString().slice(0, 10);
   document.querySelectorAll('#annualEmpCheckList label').forEach(label => {
     const no = label.dataset.no || '';
     const emp = employees.find(e => String(e.no) === no);
     const cb = label.querySelector('input[type="checkbox"]');
-    if (cb) cb.checked = !!emp;
+    if (cb) cb.checked = !!emp && (!emp.leave || emp.leave >= today);
   });
   updateAnnualSelSummary();
 }
