@@ -1,4 +1,4 @@
-// 수정: 2026-05-27 22:35 — 백업 폴더 보기 버튼 추가
+// 수정: 2026-05-27 22:40 — 폴더 보기를 showOpenFilePicker로 변경 (파일 표시)
 'use strict';
 
 /* ── 날짜 유틸 ── */
@@ -232,7 +232,7 @@ async function openBackupFolder() {
     return;
   }
   try {
-    await showDirectoryPicker({ startIn: dirHandle, mode: 'read' });
+    await showOpenFilePicker({ startIn: dirHandle, multiple: true });
   } catch (e) {
     // AbortError: 사용자가 취소 — 무시
   }
