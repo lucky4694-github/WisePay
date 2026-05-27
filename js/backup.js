@@ -1,4 +1,4 @@
-// 수정: 2026-05-27 15:45 — 백업 함수 시작 시 sessionStorage 복원키 설정 (리로드 시 gas 페이지 복귀 보장)
+// 수정: 2026-05-27 17:57 — 급여 복원 범위 선택 모달 구현 (사원×월 체크박스 필터링 후 복원)
 'use strict';
 
 /* ── 날짜 유틸 ── */
@@ -286,6 +286,8 @@ function _onRestoreEmpFile(input) {
 }
 
 /* ── 급여 복원 ── */
+let _restorePayData = null;
+
 function restorePayFromJson() {
   const input = document.getElementById('restorePayInput');
   if (input) { input.value = ''; input.click(); }
@@ -304,45 +306,123 @@ function _onRestorePayFile(input) {
         input.value = '';
         return;
       }
-      const msg = jp
-        ? '⚠️ 給与データを復元すると、現在の給与データがバックアップ時点に戻ります。\n続けますか？'
-        : '⚠️ 급여 데이터를 복원하면 현재 급여 데이터가 백업 시점으로 되돌아갑니다.\n계속하시겠습니까?';
-      if (!confirm(msg)) { input.value = ''; return; }
-
-      if (Array.isArray(data.rateHistory)) {
-        rateHistory = data.rateHistory;
-        localStorage.setItem(LS.rateHistory, JSON.stringify(rateHistory));
-      }
-
-      if (Array.isArray(data.payrolls)) {
-        employees.forEach(emp => {
-          const pNo = String(emp.no).padStart(4, '0');
-          for (let y = 2024; y <= 2030; y++) {
-            for (let m = 1; m <= 12; m++) {
-              localStorage.removeItem(`kyuyo_p_${pNo}_${y}_${m}`);
-            }
-          }
-        });
-        data.payrolls.forEach(row => {
-          const { no, name, year, month, ...d } = row;
-          if (no == null || !year || !month) return;
-          const pNo = String(no).padStart(4, '0');
-          localStorage.setItem(`kyuyo_p_${pNo}_${year}_${month}`, JSON.stringify(d));
-        });
-      }
-
-      showToast(jp ? '給与データを復元しました ✓' : '급여 데이터 복원 완료 ✓', 's');
-      try { renderRates(); } catch(e) {}
-      const activePage = document.querySelector('.page.active')?.id || '';
-      if (activePage === 'page-annual') try { renderAnnual(); } catch(e) {}
-      if (activePage === 'page-history') try { renderHistory(); } catch(e) {}
-      if (activePage === 'page-payroll') try { loadPayrollForm(); } catch(e) {}
+      _restorePayData = data;
+      _openRestorePayModal(data);
     } catch (err) {
       showToast(jp ? '読み込みに失敗しました' : '파일 읽기에 실패했습니다', 'e');
     }
     input.value = '';
   };
   reader.readAsText(file);
+}
+
+function _openRestorePayModal(data) {
+  const empMap = new Map();
+  (data.payrolls || []).forEach(row => {
+    if (row.no != null) empMap.set(String(row.no), row.name || '');
+  });
+
+  const empList = document.getElementById('restore-emp-list');
+  if (!empList) return;
+  empList.innerHTML = '';
+  empMap.forEach((name, no) => {
+    const label = document.createElement('label');
+    label.style.cssText = 'display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;cursor:pointer;';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'restore-emp-cb';
+    cb.value = no;
+    cb.checked = true;
+    cb.addEventListener('change', () => _syncRestoreAllCb('restore-emp-all', '.restore-emp-cb'));
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(` ${no.padStart(4, '0')}  ${name}`));
+    empList.appendChild(label);
+  });
+
+  const empAllCb = document.getElementById('restore-emp-all');
+  if (empAllCb) empAllCb.checked = true;
+
+  document.querySelectorAll('.restore-month-cb').forEach(cb => { cb.checked = true; });
+  const monthAllCb = document.getElementById('restore-month-all');
+  if (monthAllCb) monthAllCb.checked = true;
+
+  openModal('modal-restore-pay');
+}
+
+function _toggleRestoreEmpAll(checked) {
+  document.querySelectorAll('.restore-emp-cb').forEach(cb => { cb.checked = checked; });
+}
+
+function _toggleRestoreMonthAll(checked) {
+  document.querySelectorAll('.restore-month-cb').forEach(cb => { cb.checked = checked; });
+}
+
+function _syncRestoreAllCb(allId, cbSelector) {
+  const allCb = document.getElementById(allId);
+  if (!allCb) return;
+  allCb.checked = [...document.querySelectorAll(cbSelector)].every(cb => cb.checked);
+}
+
+function _confirmRestorePay() {
+  const selectedEmps   = [...document.querySelectorAll('.restore-emp-cb:checked')].map(cb => cb.value);
+  const selectedMonths = [...document.querySelectorAll('.restore-month-cb:checked')].map(cb => Number(cb.value));
+
+  if (!selectedEmps.length || !selectedMonths.length) {
+    showToast('사원과 월을 하나 이상 선택해 주세요', 'w');
+    return;
+  }
+
+  const n = selectedEmps.length;
+  const m = selectedMonths.length;
+  const jp = LANG === 'JP';
+  const msg = jp
+    ? `選択した${n}名 × ${m}ヶ月のデータを上書きします。現在のデータが上書きされます。続けますか？`
+    : `선택한 ${n}명 × ${m}개월 데이터를 덮어씁니다. 현재 데이터가 덮어써집니다. 계속하시겠습니까?`;
+  if (!confirm(msg)) return;
+
+  closeModal('modal-restore-pay');
+
+  const data = _restorePayData;
+
+  if (Array.isArray(data.rateHistory)) {
+    rateHistory = data.rateHistory;
+    localStorage.setItem(LS.rateHistory, JSON.stringify(rateHistory));
+  }
+
+  if (Array.isArray(data.payrolls)) {
+    const empSet   = new Set(selectedEmps.map(String));
+    const monthSet = new Set(selectedMonths);
+
+    // 백업에서 선택 범위만 추출
+    const backupMap = new Map();
+    data.payrolls.forEach(row => {
+      const { no, name, year, month, ...d } = row;
+      if (no == null || !year || !month) return;
+      if (!empSet.has(String(no)) || !monthSet.has(Number(month))) return;
+      const pNo = String(no).padStart(4, '0');
+      backupMap.set(`kyuyo_p_${pNo}_${year}_${month}`, d);
+    });
+
+    // 선택 범위 기존 데이터 삭제
+    selectedEmps.forEach(no => {
+      const pNo = String(no).padStart(4, '0');
+      for (let y = 2024; y <= 2030; y++) {
+        selectedMonths.forEach(mon => localStorage.removeItem(`kyuyo_p_${pNo}_${y}_${mon}`));
+      }
+    });
+
+    // 백업 데이터 복원
+    backupMap.forEach((d, key) => localStorage.setItem(key, JSON.stringify(d)));
+  }
+
+  _restorePayData = null;
+
+  showToast(jp ? '給与データを復元しました ✓' : '급여 데이터 복원 완료 ✓', 's');
+  try { renderRates(); } catch(e) {}
+  const activePage = document.querySelector('.page.active')?.id || '';
+  if (activePage === 'page-annual') try { renderAnnual(); } catch(e) {}
+  if (activePage === 'page-history') try { renderHistory(); } catch(e) {}
+  if (activePage === 'page-payroll') try { loadPayrollForm(); } catch(e) {}
 }
 
 /* ── Excel 백업 ── */
