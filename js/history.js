@@ -1,4 +1,4 @@
-// 수정: 2026-05-27 11:02 — Undo/Redo 제거: deleted 플래그 참조 삭제
+// 수정: 2026-05-27 17:07 — 임금대장 초기 진입 시 사원 미선택 상태로 변경 (개인정보 보호)
 'use strict';
 function buildAnnualYearSel() {
   const sel = document.getElementById('annualYearSel');
@@ -23,12 +23,11 @@ function buildAnnualEmpSel() {
   const isFirstBuild = list.children.length === 0;
   const prevNos = new Set(getSelectedAnnualNos().map(String));
   list.innerHTML = '';
-  let firstActive = true;
   employees.forEach(e => {
     if (!e || e.no == null) return;
     const noStr = String(e.no);
-    const checked = isFirstBuild ? firstActive : prevNos.has(noStr);
-    if (isFirstBuild && firstActive) firstActive = false;
+    // 최초 진입 시 아무도 선택하지 않음 (이전 선택 상태 유지)
+    const checked = isFirstBuild ? false : prevNos.has(noStr);
     const label = document.createElement('label');
     label.dataset.no = noStr;
     label.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 6px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;user-select:none;';
