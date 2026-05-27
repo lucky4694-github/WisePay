@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-27 17:57 — 급여 복원 범위 선택 모달 추가 (사원×월 체크박스 선택 후 복원)
+  수정: 2026-05-27 22:05 — 사원/급여 백업 위치 교체 + 사원 복원 사원 선택 모달 추가
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -366,19 +366,6 @@
       </div>
       <!-- 사원 / 급여 JSON 백업 + 복원 -->
       <div style="margin-bottom:10px;">
-        <div id="t-backup-emp-label" style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:5px;">사원 데이터</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <button onclick="downloadEmpBackupJson()" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;background:var(--accent2);color:var(--accent);border:1px solid var(--accent3);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span id="t-backup-emp-btn">👤 사원 백업</span>
-          </button>
-          <button onclick="restoreEmpFromJson()" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.58"/></svg>
-            <span id="t-restore-emp-btn">👤 사원 복원</span>
-          </button>
-        </div>
-      </div>
-      <div style="margin-bottom:10px;">
         <div id="t-backup-pay-label" style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:5px;">급여 데이터</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <button onclick="downloadPayBackupJson()" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;background:var(--accent2);color:var(--accent);border:1px solid var(--accent3);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
@@ -388,6 +375,19 @@
           <button onclick="restorePayFromJson()" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.58"/></svg>
             <span id="t-restore-pay-btn">💴 급여 복원</span>
+          </button>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div id="t-backup-emp-label" style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:5px;">사원 데이터</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button onclick="downloadEmpBackupJson()" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;background:var(--accent2);color:var(--accent);border:1px solid var(--accent3);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span id="t-backup-emp-btn">👤 사원 백업</span>
+          </button>
+          <button onclick="restoreEmpFromJson()" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.58"/></svg>
+            <span id="t-restore-emp-btn">👤 사원 복원</span>
           </button>
         </div>
       </div>
@@ -583,6 +583,30 @@
     <div class="modal-foot">
       <button class="btn" onclick="closeModal('modal-restore-pay')">취소</button>
       <button class="btn btn-primary" onclick="_confirmRestorePay()">복원 실행</button>
+    </div>
+  </div>
+</div>
+
+<!-- 사원 복원 범위 선택 모달 -->
+<div class="overlay" id="modal-restore-emp">
+  <div class="modal" style="max-width:360px;">
+    <div class="modal-head">
+      <span class="modal-title">👤 사원 복원 범위 선택</span>
+      <span class="modal-x" onclick="closeModal('modal-restore-emp')">✕</span>
+    </div>
+    <div class="modal-body">
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px;">복원할 사원 선택</div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 0;cursor:pointer;border-bottom:1px solid var(--border);margin-bottom:5px;">
+          <input type="checkbox" id="restore-emp-sel-all" onchange="_toggleRestoreEmpSelAll(this.checked)">
+          전체 선택/해제
+        </label>
+        <div id="restore-emp-sel-list" style="max-height:260px;overflow-y:auto;padding-left:2px;"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('modal-restore-emp')">취소</button>
+      <button class="btn btn-primary" onclick="_confirmRestoreEmp()">복원 실행</button>
     </div>
   </div>
 </div>

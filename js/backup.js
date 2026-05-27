@@ -1,4 +1,4 @@
-// 수정: 2026-05-27 17:57 — 급여 복원 범위 선택 모달 구현 (사원×월 체크박스 필터링 후 복원)
+// 수정: 2026-05-27 22:05 — 사원/급여 백업 위치 교체 + 사원 복원 사원 선택 모달 추가
 'use strict';
 
 /* ── 날짜 유틸 ── */
@@ -248,6 +248,8 @@ async function downloadPayBackupJson() {
 }
 
 /* ── 사원 복원 ── */
+let _restoreEmpData = null;
+
 function restoreEmpFromJson() {
   const input = document.getElementById('restoreEmpInput');
   if (input) { input.value = ''; input.click(); }
@@ -266,23 +268,82 @@ function _onRestoreEmpFile(input) {
         input.value = '';
         return;
       }
-      const msg = jp
-        ? '⚠️ 従業員データを復元すると、現在の従業員データがバックアップ時点に戻ります。\n続けますか？'
-        : '⚠️ 사원 데이터를 복원하면 현재 사원 데이터가 백업 시점으로 되돌아갑니다.\n계속하시겠습니까?';
-      if (!confirm(msg)) { input.value = ''; return; }
-      employees = data.employees;
-      localStorage.setItem(LS.emp, JSON.stringify(employees));
-      showToast(jp ? '従業員データを復元しました ✓' : '사원 데이터 복원 완료 ✓', 's');
-      try { renderEmpList(); } catch(e) {}
-      try { renderEmpSelect(); } catch(e) {}
-      try { buildHistEmpSel(); renderHistory(); } catch(e) {}
-      try { buildAnnualEmpSel(); renderAnnual(); } catch(e) {}
+      _restoreEmpData = data;
+      _openRestoreEmpModal(data);
     } catch (err) {
       showToast(jp ? '読み込みに失敗しました' : '파일 읽기에 실패했습니다', 'e');
     }
     input.value = '';
   };
   reader.readAsText(file);
+}
+
+function _openRestoreEmpModal(data) {
+  const empList = document.getElementById('restore-emp-sel-list');
+  if (!empList) return;
+  empList.innerHTML = '';
+
+  (data.employees || []).forEach(emp => {
+    const label = document.createElement('label');
+    label.style.cssText = 'display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;cursor:pointer;';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'restore-emp-sel-cb';
+    cb.value = String(emp.no);
+    cb.checked = true;
+    cb.addEventListener('change', _syncRestoreEmpSelAllCb);
+    label.appendChild(cb);
+    const no = String(emp.no).padStart(4, '0');
+    label.appendChild(document.createTextNode(` ${no}  ${emp.name || ''}`));
+    empList.appendChild(label);
+  });
+
+  const allCb = document.getElementById('restore-emp-sel-all');
+  if (allCb) allCb.checked = true;
+
+  openModal('modal-restore-emp');
+}
+
+function _toggleRestoreEmpSelAll(checked) {
+  document.querySelectorAll('.restore-emp-sel-cb').forEach(cb => { cb.checked = checked; });
+}
+
+function _syncRestoreEmpSelAllCb() {
+  const allCb = document.getElementById('restore-emp-sel-all');
+  if (!allCb) return;
+  allCb.checked = [...document.querySelectorAll('.restore-emp-sel-cb')].every(cb => cb.checked);
+}
+
+function _confirmRestoreEmp() {
+  const selected = [...document.querySelectorAll('.restore-emp-sel-cb:checked')].map(cb => cb.value);
+  if (!selected.length) {
+    showToast('사원을 하나 이상 선택해 주세요', 'w');
+    return;
+  }
+
+  const jp = LANG === 'JP';
+  const msg = jp
+    ? `選択した${selected.length}名の従業員データを復元します。続けますか？`
+    : `선택한 ${selected.length}명의 사원 데이터를 복원합니다. 계속하시겠습니까?`;
+  if (!confirm(msg)) return;
+
+  closeModal('modal-restore-emp');
+
+  const selectedSet = new Set(selected.map(String));
+  const backupEmps = (_restoreEmpData.employees || []).filter(e => selectedSet.has(String(e.no)));
+
+  employees = employees.filter(e => !selectedSet.has(String(e.no)));
+  employees.push(...backupEmps);
+  employees.sort((a, b) => Number(a.no) - Number(b.no));
+
+  localStorage.setItem(LS.emp, JSON.stringify(employees));
+  _restoreEmpData = null;
+
+  showToast(jp ? '従業員データを復元しました ✓' : '사원 데이터 복원 완료 ✓', 's');
+  try { renderEmpList(); } catch(e) {}
+  try { renderEmpSelect(); } catch(e) {}
+  try { buildHistEmpSel(); renderHistory(); } catch(e) {}
+  try { buildAnnualEmpSel(); renderAnnual(); } catch(e) {}
 }
 
 /* ── 급여 복원 ── */
