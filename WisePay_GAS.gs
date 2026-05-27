@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-27 23:30 — appendLog 형식 변경 (target/result/memo), 3개월 보존, clearSyncLog 추가
+// 수정: 2026-05-27 23:40 — 로그 시트명 WisePay로그로 변경, 헤더 한국어화, 구버전 시트 자동 삭제
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -9,7 +9,7 @@
 const SHEET_EMP  = '사원정보';
 const SHEET_PAY  = '급여데이터';
 const SHEET_RATE = '보험료율데이터';
-const SHEET_LOG  = '동기화로그';
+const SHEET_LOG  = 'WisePay로그';
 
 // 협회けんぽ URL (2025년 사이트 개편 후 변경된 URL)
 const KENPO_INDEX_URL = 'https://www.kyoukaikenpo.or.jp/about/business/insurance_rate/rate_prefectures/';
@@ -160,19 +160,24 @@ function saveSheet(name, records) {
 }
 
 function appendLog(data) {
-  const NEW_HEADERS = ['timestamp', 'logType', 'target', 'result', 'memo'];
+  const HEADERS = ['일시', '작업종류', '대상', '결과', '비고'];
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // 구버전 '동기화로그' 시트가 남아있으면 자동 삭제
+  const oldSheet = ss.getSheetByName('동기화로그');
+  if (oldSheet) ss.deleteSheet(oldSheet);
+
   const sheet = getSheet(SHEET_LOG);
   const lastRow = sheet.getLastRow();
 
-  // 구버전 헤더(empCount/payrollCount 형식) 또는 빈 시트이면 초기화
+  // 헤더가 없거나 구버전(영문 헤더)이면 시트 초기화 후 한국어 헤더 설정
   if (lastRow === 0) {
-    sheet.getRange(1, 1, 1, NEW_HEADERS.length).setValues([NEW_HEADERS]);
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
   } else {
-    const curHeader = sheet.getRange(1, 1, 1, 6).getValues()[0];
-    const isOldFormat = curHeader[2] === 'empCount' || curHeader[2] === 'payrollCount';
-    if (isOldFormat) {
+    const curH = sheet.getRange(1, 1, 1, 5).getValues()[0];
+    if (curH[0] !== '일시') {
       sheet.clearContents();
-      sheet.getRange(1, 1, 1, NEW_HEADERS.length).setValues([NEW_HEADERS]);
+      sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
     }
   }
 
