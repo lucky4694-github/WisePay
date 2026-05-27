@@ -1,6 +1,7 @@
-// 수정: 2026-05-27 13:29 — showSaveFilePicker 제거 (페이지 리로드 원인) → 앵커 다운로드만 사용
+// 수정: 2026-05-27 14:55 — 백업 저장 폴더 사전 설정 기능 추가 (IndexedDB + File System Access API)
 'use strict';
 
+/* ── 날짜 유틸 ── */
 function _backupDateStr() {
   const d = new Date();
   return d.getFullYear() +
@@ -36,6 +37,7 @@ function checkBackupReminder() {
   }, 2500);
 }
 
+/* ── 앵커 다운로드 (폴백) ── */
 function _saveFile(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -48,22 +50,184 @@ function _saveFile(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
+/* ── IndexedDB: 폴더 핸들 저장/로드/삭제 ── */
+function _openBackupDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('wisepay_backup_v1', 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore('dir_handles');
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function _saveDirHandle(handle) {
+  const db = await _openBackupDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('dir_handles', 'readwrite');
+    tx.objectStore('dir_handles').put(handle, 'backup_dir');
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function _loadDirHandle() {
+  try {
+    const db = await _openBackupDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('dir_handles', 'readonly');
+      const req = tx.objectStore('dir_handles').get('backup_dir');
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) {
+    return null;
+  }
+}
+
+async function _clearDirHandle() {
+  try {
+    const db = await _openBackupDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('dir_handles', 'readwrite');
+      tx.objectStore('dir_handles').delete('backup_dir');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {}
+}
+
+/* ── 파일 시스템 직접 쓰기 ── */
+async function _writeToDir(dirHandle, blob, filename) {
+  const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+  const writable = await fileHandle.createWritable();
+  await writable.write(blob);
+  await writable.close();
+}
+
+/* ── 폴더 지정 저장 (핵심 함수) ──
+   반환값: true = 저장 완료, false = 취소/실패 (성공 토스트 표시 안 함) */
+async function _saveWithFolder(blob, filename) {
+  const jp = LANG === 'JP';
+
+  // File System Access API 미지원(Safari 등): 앵커 다운로드로 폴백
+  if (typeof showDirectoryPicker === 'undefined') {
+    _saveFile(blob, filename);
+    return true;
+  }
+
+  let dirHandle = await _loadDirHandle();
+
+  if (!dirHandle) {
+    // 폴더 미설정: 폴더 선택 대화상자 자동 오픈
+    try {
+      dirHandle = await showDirectoryPicker({ mode: 'readwrite' });
+      await _saveDirHandle(dirHandle);
+      localStorage.setItem('wisepay_backup_folder_name', dirHandle.name);
+      renderBackupFolderStatus();
+    } catch (e) {
+      if (e.name === 'AbortError') return false; // 사용자가 취소
+      // 기타 오류: 앵커 다운로드로 폴백
+      _saveFile(blob, filename);
+      return true;
+    }
+  } else {
+    // 폴더 설정됨: 권한 확인
+    let perm = await dirHandle.queryPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') {
+      perm = await dirHandle.requestPermission({ mode: 'readwrite' });
+    }
+    if (perm !== 'granted') {
+      await _clearDirHandle();
+      localStorage.removeItem('wisepay_backup_folder_name');
+      renderBackupFolderStatus();
+      showToast(jp ? 'フォルダへのアクセスが拒否されました。再設定してください。' : '폴더 접근이 거부되었습니다. 다시 설정해 주세요.', 'e');
+      return false;
+    }
+  }
+
+  // 파일 쓰기
+  try {
+    await _writeToDir(dirHandle, blob, filename);
+    return true;
+  } catch (e) {
+    // 폴더 삭제됨 등 쓰기 실패: 설정 초기화
+    await _clearDirHandle();
+    localStorage.removeItem('wisepay_backup_folder_name');
+    renderBackupFolderStatus();
+    showToast(jp ? '保存フォルダが見つかりません。再設定してください。' : '저장 폴더를 찾을 수 없습니다. 다시 설정해 주세요.', 'e');
+    return false;
+  }
+}
+
+/* ── 백업 폴더 UI ── */
+function renderBackupFolderStatus() {
+  const el = document.getElementById('backup-folder-status');
+  if (!el) return;
+  const jp = LANG === 'JP';
+
+  if (typeof showDirectoryPicker === 'undefined') {
+    el.innerHTML = `<span style="color:var(--text3);font-size:11px;">${jp ? '⚠️ Chrome専用機能（Safari/Firefoxは非対応）' : '⚠️ Chrome 전용 기능 (Safari/Firefox 미지원)'}</span>`;
+    return;
+  }
+
+  const folderName = localStorage.getItem('wisepay_backup_folder_name');
+  if (folderName) {
+    el.innerHTML =
+      `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>` +
+      `<span style="color:var(--accent);font-weight:600;font-size:11px;">${folderName}</span>` +
+      `<button onclick="setBackupFolder()" style="padding:2px 8px;font-size:10px;background:var(--accent2);color:var(--accent);border:1px solid var(--accent3);border-radius:4px;cursor:pointer;">${jp ? '変更' : '변경'}</button>` +
+      `<button onclick="clearBackupFolder()" style="padding:2px 8px;font-size:10px;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:4px;cursor:pointer;">${jp ? '解除' : '해제'}</button>`;
+  } else {
+    el.innerHTML =
+      `<span style="color:var(--text3);font-size:11px;">${jp ? '未設定（初回バックアップ時に自動でフォルダを指定します）' : '미설정 (처음 백업 시 자동으로 폴더를 지정합니다)'}</span>` +
+      `<button onclick="setBackupFolder()" style="padding:2px 8px;font-size:10px;background:var(--accent2);color:var(--accent);border:1px solid var(--accent3);border-radius:4px;cursor:pointer;">${jp ? 'フォルダ設定' : '폴더 설정'}</button>`;
+  }
+}
+
+async function setBackupFolder() {
+  const jp = LANG === 'JP';
+  if (typeof showDirectoryPicker === 'undefined') {
+    showToast(jp ? 'このブラウザはフォルダ選択に対応していません' : '이 브라우저는 폴더 선택을 지원하지 않습니다', 'w');
+    return;
+  }
+  try {
+    const dirHandle = await showDirectoryPicker({ mode: 'readwrite' });
+    await _saveDirHandle(dirHandle);
+    localStorage.setItem('wisepay_backup_folder_name', dirHandle.name);
+    renderBackupFolderStatus();
+    showToast(jp ? `フォルダを設定しました: ${dirHandle.name}` : `폴더 설정 완료: ${dirHandle.name}`, 's');
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      showToast(jp ? 'フォルダ設定に失敗しました' : '폴더 설정에 실패했습니다', 'e');
+    }
+  }
+}
+
+async function clearBackupFolder() {
+  await _clearDirHandle();
+  localStorage.removeItem('wisepay_backup_folder_name');
+  renderBackupFolderStatus();
+  showToast(LANG === 'JP' ? 'フォルダ設定を解除しました' : '폴더 설정을 해제했습니다', 's');
+}
+
 /* ── 사원 백업 ── */
-function downloadEmpBackupJson() {
+async function downloadEmpBackupJson() {
   const filename = '사원_backup_' + _backupDateStr() + '.json';
   const data = { exportedAt: new Date().toISOString(), employees };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  _saveFile(blob, filename);
+  const ok = await _saveWithFolder(blob, filename);
+  if (!ok) return;
   _markBackupDone();
   showToast(LANG === 'JP' ? '従業員バックアップ完了 ✓' : '사원 백업 완료 ✓', 's');
 }
 
 /* ── 급여 백업 ── */
-function downloadPayBackupJson() {
+async function downloadPayBackupJson() {
   const filename = '급여_backup_' + _backupDateStr() + '.json';
   const data = { exportedAt: new Date().toISOString(), payrolls: collectAllPayrolls(), rateHistory };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  _saveFile(blob, filename);
+  const ok = await _saveWithFolder(blob, filename);
+  if (!ok) return;
   _markBackupDone();
   showToast(LANG === 'JP' ? '給与バックアップ完了 ✓' : '급여 백업 완료 ✓', 's');
 }
@@ -136,7 +300,6 @@ function _onRestorePayFile(input) {
       }
 
       if (Array.isArray(data.payrolls)) {
-        // 기존 급여 키 삭제 후 복원
         employees.forEach(emp => {
           const pNo = String(emp.no).padStart(4, '0');
           for (let y = 2024; y <= 2030; y++) {
@@ -168,7 +331,7 @@ function _onRestorePayFile(input) {
 }
 
 /* ── Excel 백업 ── */
-function downloadBackupExcel() {
+async function downloadBackupExcel() {
   if (typeof XLSX === 'undefined') {
     showToast(LANG === 'JP' ? 'Excelライブラリ読み込み中... 少々お待ちください' : 'Excel 라이브러리 로딩 중... 잠시 후 다시 시도해 주세요', 'w');
     return;
@@ -182,7 +345,8 @@ function downloadBackupExcel() {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rateHistory.length ? rateHistory : [{}]), '보험료율이력');
   const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  _saveFile(blob, filename);
+  const ok = await _saveWithFolder(blob, filename);
+  if (!ok) return;
   _markBackupDone();
   showToast(LANG === 'JP' ? 'Excelバックアップ完了 ✓' : 'Excel 백업 완료 ✓', 's');
 }

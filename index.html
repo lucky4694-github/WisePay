@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-27 14:10 — app.js: gotoPage에 임시 console.trace 추가 (원인 추적용)
+  수정: 2026-05-27 14:55 — backup.js: 백업 저장 폴더 사전 설정 기능 추가 (IndexedDB + File System Access API)
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -393,7 +393,12 @@
           <span id="t-backup-excel-btn">📊 Excel 백업 (전체)</span>
         </button>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:14px;" id="t-backup-file-desc">파일명: 사원_backup_YYYYMMDD.json / 급여_backup_YYYYMMDD.json</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px;" id="t-backup-file-desc">파일명: 사원_backup_YYYYMMDD.json / 급여_backup_YYYYMMDD.json</div>
+      <!-- 백업 저장 폴더 설정 -->
+      <div style="margin-bottom:14px;padding:10px 12px;background:var(--bg2);border-radius:8px;border:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;" id="t-backup-folder-label">💾 백업 저장 폴더</div>
+        <div id="backup-folder-status" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div>
+      </div>
       <!-- 급여 데이터(CSV) → 구글 드라이브 -->
       <div style="border-top:1px solid var(--border);padding-top:12px;">
         <div id="t-freee-section-title" style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;">급여 데이터(CSV) → 구글 드라이브</div>

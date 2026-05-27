@@ -1,4 +1,4 @@
-// 수정: 2026-05-27 11:02 — Undo/Redo 제거: 키 바인딩·initUndo·hasUnsavedChanges 삭제, 레거시 deleted 필터 추가
+// 수정: 2026-05-27 14:55 — gotoPage console.trace 제거 (디버그 완료)
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -193,7 +193,6 @@ window.addEventListener('afterprint', () => {
 });
 
 function gotoPage(id, el) {
-  console.trace('[WisePay] gotoPage called: ' + id);
   const currentPage = document.querySelector('.page.active')?.id;
   // 사원 편집 중 다른 페이지로 이동 시 경고
   if(currentPage === 'page-employees' && id !== 'employees' && empFormDirty) {

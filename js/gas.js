@@ -1,4 +1,4 @@
-// 수정: 2026-05-26 23:55 — autoLoadFromGas: PFIELD 보호 조건 강화 (0·빈값 제외, 실제 비영(非零) 입력값 있을 때만 보호)
+// 수정: 2026-05-27 14:55 — openGasModal에 renderBackupFolderStatus() 호출 추가
 'use strict';
 async function exportAllToGas() {
   if (!gasUrl) {
@@ -311,6 +311,7 @@ function openGasModal() {
   const actionsEl = document.getElementById('gas-actions');
   if (actionsEl) actionsEl.style.display = gasUrl ? '' : 'none';
   updateGasUrlBadge();
+  renderBackupFolderStatus();
 }
 
 function updateGasUrlBadge() {

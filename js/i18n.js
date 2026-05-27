@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-27 11:25 — 백업/복원·CSV업로드·드라이브·로컬PC 일본어 번역 추가
+﻿// 수정: 2026-05-27 14:55 — 백업 저장 폴더 관련 번역 추가
 'use strict';
 function setTxt(id, jp, kr) {
   const el = document.getElementById(id);
@@ -114,6 +114,8 @@ function applyLang() {
     '毎週月曜日の午前9時に別のスプレッドシートへ自動バックアップされます（最大26個保持）。',
     '매주 월요일 오전 9시에 별도 스프레드시트로 자동 백업됩니다 (최대 26개 유지).'
   );
+  setTxt('t-backup-folder-label', '💾 バックアップ保存フォルダ', '💾 백업 저장 폴더');
+  renderBackupFolderStatus();
 
   setTxt('t-reset-zone', '危険区域', '위험 구역');
   setTxt('t-reset-title', 'ローカルデータ初期化', '로컬 데이터 초기화');
