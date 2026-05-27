@@ -1,4 +1,4 @@
-// 수정: 2026-05-27 11:45 — 백업 후 초기화면 이동 버그 수정 (click 버블링 차단 + 페이지 복원)
+// 수정: 2026-05-27 12:43 — 백업 전 sessionStorage에 gas 페이지 저장 (리로드 시 복원)
 'use strict';
 
 function _backupDateStr() {
@@ -41,6 +41,8 @@ function _anchorDownload(blob, filename) {
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  a.target = '_blank';   // 혹시 탐색이 발생해도 현재 탭을 유지
+  a.rel = 'noopener';
   a.style.display = 'none';
   document.body.appendChild(a);
   // bubbles:false 로 클릭 이벤트가 상위 DOM으로 전파되지 않도록 차단
@@ -69,7 +71,9 @@ async function downloadEmpBackupJson() {
   const filename = '사원_backup_' + _backupDateStr() + '.json';
   const data = { exportedAt: new Date().toISOString(), employees };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  sessionStorage.setItem('wisepay_restore_page', 'gas');
   await _saveFile(blob, filename);
+  sessionStorage.removeItem('wisepay_restore_page');
   _markBackupDone();
   _restoreGasPage();
   showToast(LANG === 'JP' ? '従業員バックアップ完了 ✓' : '사원 백업 완료 ✓', 's');
@@ -80,7 +84,9 @@ async function downloadPayBackupJson() {
   const filename = '급여_backup_' + _backupDateStr() + '.json';
   const data = { exportedAt: new Date().toISOString(), payrolls: collectAllPayrolls(), rateHistory };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  sessionStorage.setItem('wisepay_restore_page', 'gas');
   await _saveFile(blob, filename);
+  sessionStorage.removeItem('wisepay_restore_page');
   _markBackupDone();
   _restoreGasPage();
   showToast(LANG === 'JP' ? '給与バックアップ完了 ✓' : '급여 백업 완료 ✓', 's');
