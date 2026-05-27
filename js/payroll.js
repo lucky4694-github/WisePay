@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-27 16:20 — 급여 데이터 상태 배지 추가 (저장됨/구글시트/임시값)
+﻿// 수정: 2026-05-27 16:37 — 파랑 배지 제거·과거 달 oldest 데이터 임시 채움·빈 상태 레이아웃 고정
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -7,15 +7,16 @@ function _updatePayrollStatus(status) {
   const el = document.getElementById('payroll-data-status');
   if (!el) return;
   const jp = LANG === 'JP';
+  // 'none': 사원 미선택 → 완전 숨김
+  if (status === 'none') { el.style.display = 'none'; return; }
   const cfg = {
-    saved: { bg:'#f0fdf4', color:'#166534', border:'#bbf7d0',
+    saved:  { bg:'#f0fdf4', color:'#166534', border:'#bbf7d0',
       text: jp ? '✅ この月のデータが保存されています' : '✅ 이 달 저장된 데이터' },
-    gas:   { bg:'#eff6ff', color:'#1e40af', border:'#bfdbfe',
-      text: jp ? '📊 Googleシート集計値（月給のみ参考表示）' : '📊 구글 시트 집계값 (月給만 참고 표시)' },
-    approx:{ bg:'#fffbeb', color:'#92400e', border:'#fde68a',
-      text: jp ? '📋 直前の月のデータを仮入力中（未保存）' : '📋 이전 달 기준 임시 입력값 (미저장)' },
-  }[status];
-  if (!cfg) { el.style.display = 'none'; return; }
+    approx: { bg:'#fffbeb', color:'#92400e', border:'#fde68a',
+      text: jp ? '📋 仮入力値（未保存）' : '📋 임시 입력값 (미저장)' },
+    empty:  { bg:'var(--surface2)', color:'var(--text3)', border:'var(--border)',
+      text: jp ? '— 入力なし' : '— 입력값 없음' },
+  }[status] || { bg:'var(--surface2)', color:'var(--text3)', border:'var(--border)', text:'' };
   el.style.cssText = `display:flex;align-items:center;padding:5px 16px;font-size:11px;font-weight:600;background:${cfg.bg};color:${cfg.color};border-top:1px solid ${cfg.border};border-bottom:1px solid ${cfg.border};`;
   el.textContent = cfg.text;
 }
@@ -184,9 +185,31 @@ function loadPayrollForm() {
     const selectedYM = currentYear * 100 + currentMonth;
 
     if(selectedYM < todayYM) {
-      // 과거 월: GAS 집계값이 있으면 totalPay→r-base 근사값 표시, 없으면 전 필드 비움
-      if(savedGasData) { _dataStatus = 'gas'; _loadGasApprox(savedGasData); }
-      else { _dataStatus = 'empty'; PFIELDS.forEach(f => { const el = document.getElementById(f); if(el) el.value = ''; }); }
+      // 과거 월: 이 달 이후에서 가장 오래된(가장 가까운 미래) PFIELD 데이터로 임시 채움
+      let oldestData = null;
+      let oldestGasData = savedGasData;
+      let fwdY = currentYear, fwdM = currentMonth + 1;
+      if(fwdM > 12) { fwdM = 1; fwdY++; }
+      for(let i = 0; i < 48; i++) {
+        const k = `kyuyo_p_${pNo}_${fwdY}_${fwdM}`;
+        const s = localStorage.getItem(k);
+        if(s) {
+          try {
+            const candidate = JSON.parse(s);
+            if(_hasPF(candidate)) { oldestData = candidate; break; }
+            else if(!oldestGasData && _isGas(candidate)) { oldestGasData = candidate; }
+          } catch(e) {}
+        }
+        fwdM++;
+        if(fwdM > 12) { fwdM = 1; fwdY++; }
+      }
+      if(oldestData) {
+        _dataStatus = 'approx'; _loadPFields(oldestData);
+      } else if(oldestGasData) {
+        _dataStatus = 'approx'; _loadGasApprox(oldestGasData);
+      } else {
+        _dataStatus = 'empty'; PFIELDS.forEach(f => { const el = document.getElementById(f); if(el) el.value = ''; });
+      }
     } else {
       // 당월·미래 월: 가장 최근 PFIELD 포맷 데이터로 초기값 설정
       // PFIELD 없으면 가장 최근 GAS 집계값으로 폴백
