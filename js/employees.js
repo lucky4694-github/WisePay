@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-27 11:02 — Undo/Redo 제거: deleted 플래그·pushAction 삭제, deleteEmp 하드삭제 복원
+﻿// 수정: 2026-05-27 22:50 — 사원 폼 레이아웃 변경: 사원번호 전체 폭, 이름+카나·입사일+퇴사일 쌍
 'use strict';
 function renderEmpList() {
   const body=document.getElementById('empListBody');
@@ -100,7 +100,7 @@ function renderEmpFormFields(emp) {
 
   const html = `
   <div class="form-grid2">
-    <div class="form-group">
+    <div class="form-group" style="grid-column:span 2;">
       <div class="form-label-block">
         <div class="form-label-row">
           <label class="form-label"><span class="form-req">*</span>${jp?'社員番号（4桁）':'사원번호（4자리）'}</label>
