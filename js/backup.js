@@ -1,4 +1,4 @@
-// 수정: 2026-05-27 12:43 — 백업 전 sessionStorage에 gas 페이지 저장 (리로드 시 복원)
+// 수정: 2026-05-27 13:02 — sessionStorage 복원 키를 백업 함수에서 삭제하지 않도록 수정
 'use strict';
 
 function _backupDateStr() {
@@ -73,7 +73,6 @@ async function downloadEmpBackupJson() {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   sessionStorage.setItem('wisepay_restore_page', 'gas');
   await _saveFile(blob, filename);
-  sessionStorage.removeItem('wisepay_restore_page');
   _markBackupDone();
   _restoreGasPage();
   showToast(LANG === 'JP' ? '従業員バックアップ完了 ✓' : '사원 백업 완료 ✓', 's');
@@ -86,7 +85,6 @@ async function downloadPayBackupJson() {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   sessionStorage.setItem('wisepay_restore_page', 'gas');
   await _saveFile(blob, filename);
-  sessionStorage.removeItem('wisepay_restore_page');
   _markBackupDone();
   _restoreGasPage();
   showToast(LANG === 'JP' ? '給与バックアップ完了 ✓' : '급여 백업 완료 ✓', 's');
