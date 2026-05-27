@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-27 15:45 — backup.js: 백업 함수 시작 시 sessionStorage 복원키 설정 (리로드 시 gas 페이지 복귀 보장)
+  수정: 2026-05-27 16:20 — payroll.js: 급여 데이터 상태 배지 추가 (저장됨/구글시트/임시값)
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -162,6 +162,9 @@
       <div class="net-amount" id="netAmountTxt">¥0</div>
     </div>
   </div>
+
+  <!-- 데이터 상태 배지 -->
+  <div id="payroll-data-status" style="display:none;"></div>
 
   <!-- 支給 + 控除 -->
   <div class="grid2" id="payrollBody" style="display:none;">

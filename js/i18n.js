@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-27 14:55 — 백업 저장 폴더 관련 번역 추가
+﻿// 수정: 2026-05-27 16:20 — 언어 전환 시 급여 데이터 상태 배지 텍스트 업데이트 추가
 'use strict';
 function setTxt(id, jp, kr) {
   const el = document.getElementById(id);
@@ -116,6 +116,7 @@ function applyLang() {
   );
   setTxt('t-backup-folder-label', '💾 バックアップ保存フォルダ', '💾 백업 저장 폴더');
   renderBackupFolderStatus();
+  try { _updatePayrollStatus(_payrollDataStatus); } catch(e) {}
 
   setTxt('t-reset-zone', '危険区域', '위험 구역');
   setTxt('t-reset-title', 'ローカルデータ初期化', '로컬 데이터 초기화');
