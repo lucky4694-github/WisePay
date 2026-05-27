@@ -193,6 +193,7 @@ window.addEventListener('afterprint', () => {
 });
 
 function gotoPage(id, el) {
+  console.trace('[WisePay] gotoPage called: ' + id);
   const currentPage = document.querySelector('.page.active')?.id;
   // 사원 편집 중 다른 페이지로 이동 시 경고
   if(currentPage === 'page-employees' && id !== 'employees' && empFormDirty) {
