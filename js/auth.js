@@ -1,4 +1,4 @@
-// 수정: 2026-05-28 17:23 — viewer 권한 쓰기 차단: write token, applyViewerRestrictions 추가
+// 수정: 2026-05-28 21:45 — 접근 불가 팝업 엔터키 닫기: showAccessDenied에서 버튼 포커스 설정
 'use strict';
 
 const AUTH_SESS_KEY = 'wisepay_session';
@@ -160,6 +160,10 @@ function canAccessPage(pageId) {
 
 function showAccessDenied() {
   document.getElementById('modal-access-denied').style.display = 'flex';
+  setTimeout(() => {
+    const btn = document.getElementById('btn-access-denied-ok');
+    if (btn) btn.focus();
+  }, 50);
 }
 
 function closeAccessDenied() {

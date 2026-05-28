@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-28 17:23 — viewer 쓰기 차단: 입력 readonly, 버튼 숨김, GAS write token 검증
+  수정: 2026-05-28 21:45 — auth.js: 접근 불가 팝업 엔터키 닫기 지원
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -599,7 +599,7 @@
     <div style="font-size:32px;margin-bottom:14px;">🔒</div>
     <div style="font-size:14px;color:#1e293b;margin-bottom:6px;font-weight:500;line-height:1.6;">このページへのアクセス権限がありません。</div>
     <div style="font-size:13px;color:#64748b;margin-bottom:24px;line-height:1.6;">이 페이지에 접근할 권한이 없습니다.</div>
-    <button onclick="closeAccessDenied()"
+    <button id="btn-access-denied-ok" onclick="closeAccessDenied()"
       style="padding:9px 36px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;"
       onmouseover="this.style.background='#4338ca'" onmouseout="this.style.background='#4f46e5'">확인</button>
   </div>
