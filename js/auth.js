@@ -1,4 +1,4 @@
-// 수정: 2026-05-28 17:23 — 로그인 기능 전면 개편: GAS users 시트 연동, SHA-256 해시, 세션 관리, 권한 제어
+// 수정: 2026-05-28 17:23 — 로그인 버튼 로딩 문구 개선(ログイン中… / 로그인 중…)
 'use strict';
 
 const AUTH_SESS_KEY = 'wisepay_session';
@@ -88,7 +88,7 @@ async function doLogin() {
   err.textContent = '';
   btn.disabled = true;
   const origText = btn.textContent;
-  btn.textContent = '...';
+  btn.textContent = 'ログイン中… / 로그인 중…';
 
   try {
     const hash   = await _sha256(pw);
