@@ -1,4 +1,4 @@
-// 수정: 2026-05-28 22:12 — 로그인 오류 메시지 줄바꿈 처리 (/ 구분자 제거)
+// 수정: 2026-05-28 22:24 — viewer 접근 불가 메뉴 잠금→숨김 처리 (설정 섹션 포함)
 'use strict';
 
 const AUTH_SESS_KEY = 'wisepay_session';
@@ -172,15 +172,13 @@ function closeAccessDenied() {
 
 function renderNavForRole() {
   if (!currentUser || currentUser.role === 'admin') return;
+  // viewer: 접근 불가 메뉴 숨김
   document.querySelectorAll('.nav-item[data-page]').forEach(item => {
-    const page = item.dataset.page;
-    if (!page || VIEWER_PAGES.has(page)) return;
-    if (item.querySelector('.nav-lock')) return;
-    const lock = document.createElement('span');
-    lock.className = 'nav-lock';
-    lock.textContent = '🔒';
-    item.appendChild(lock);
+    if (!VIEWER_PAGES.has(item.dataset.page)) item.style.display = 'none';
   });
+  // 설정 섹션 헤더 숨김
+  const settingSec = document.getElementById('t-nav-setting');
+  if (settingSec) settingSec.style.display = 'none';
 }
 
 function applyViewerRestrictions() {
