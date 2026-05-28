@@ -5,13 +5,14 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-28 22:24 — auth.js: viewer 접근 불가 메뉴 숨김 처리
+  수정: 2026-05-28 22:39 — 글자 크기 조절 기능 추가 (A-/A+ 버튼, 4단계)
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WisePay - 급여계산시스템</title>
 <script>if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) location.replace('mobile.html');</script>
 <link rel="stylesheet" href="css/styles.css">
+<script>(function(){var fs=localStorage.getItem('wisepay_fontsize');if(fs)document.documentElement.dataset.fontSize=fs;}());</script>
 </head>
 <body>
 
@@ -89,10 +90,14 @@
     </div>
   </nav>
   <div class="sidebar-foot">
-    <button class="lang-btn" onclick="toggleLang()">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-      <span id="t-langbtn">한국어로 전환</span>
-    </button>
+    <div style="display:flex;gap:4px;margin-bottom:5px;">
+      <button class="lang-btn" onclick="toggleLang()" style="flex:1;min-width:0;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span id="t-langbtn">한국어로 전환</span>
+      </button>
+      <button class="btn-fs" id="btn-fs-minus" onclick="changeFontSize(-1)" title="글자 크기 줄이기">A-</button>
+      <button class="btn-fs" id="btn-fs-plus"  onclick="changeFontSize(1)"  title="글자 크기 키우기">A+</button>
+    </div>
     <button class="lang-btn btn-logout" onclick="doLogout()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
       <span>ログアウト / 로그아웃</span>
@@ -709,5 +714,31 @@
 <script src="js/usermgmt.js"></script>
 <script src="js/app.js"></script>
 <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const FS_LEVELS = ['small','medium','large','xlarge'];
+const FS_KEY = 'wisepay_fontsize';
+function initFontSize() {
+  const saved = localStorage.getItem(FS_KEY) || 'medium';
+  document.documentElement.dataset.fontSize = saved;
+  _updateFsBtns();
+}
+function changeFontSize(dir) {
+  const cur = document.documentElement.dataset.fontSize || 'medium';
+  const idx = FS_LEVELS.indexOf(cur);
+  const next = FS_LEVELS[Math.max(0, Math.min(FS_LEVELS.length - 1, idx + dir))];
+  document.documentElement.dataset.fontSize = next;
+  localStorage.setItem(FS_KEY, next);
+  _updateFsBtns();
+}
+function _updateFsBtns() {
+  const cur = document.documentElement.dataset.fontSize || 'medium';
+  const idx = FS_LEVELS.indexOf(cur);
+  const m = document.getElementById('btn-fs-minus');
+  const p = document.getElementById('btn-fs-plus');
+  if (m) m.disabled = idx <= 0;
+  if (p) p.disabled = idx >= FS_LEVELS.length - 1;
+}
+document.addEventListener('DOMContentLoaded', initFontSize);
+</script>
 </body>
 </html>
