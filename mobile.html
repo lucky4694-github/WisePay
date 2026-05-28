@@ -1,0 +1,820 @@
+<!-- ================================================
+  WisePay Mobile (給与Pro by Wisewires)
+================================================ -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<!--
+  수정: 2026-05-28 22:07 — 신규 파일: 모바일 전용 조회 페이지 (하단 탭바, 카드형 UI)
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WisePay</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+* { -webkit-tap-highlight-color: transparent; }
+/* auth.js가 제어하는 #layout은 모바일에서 사용 안 함 */
+#layout { display: none !important; }
+
+.m-app { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; background: var(--bg); }
+.m-app.hidden { display: none; }
+
+/* Top bar */
+.m-topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  height: 52px; display: flex; align-items: center; padding: 0 12px; gap: 8px;
+}
+.m-topbar-l { flex: 1; display: flex; align-items: center; gap: 6px; }
+.topbar-l { display: flex; align-items: center; gap: 6px; flex: 1; } /* auth.js viewer badge */
+.m-app-name { font-size: 17px; font-weight: 800; color: var(--accent); letter-spacing: -0.4px; }
+.m-app-sub  { font-size: 9px; color: var(--text3); font-weight: 500; }
+.m-topbar-btn {
+  min-width: 44px; min-height: 44px; padding: 0 10px;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface2); color: var(--text2); font-size: 11px;
+  cursor: pointer; transition: background .15s; font-family: inherit; white-space: nowrap;
+}
+.m-topbar-btn:active { background: var(--bg); }
+.m-topbar-btn.logout { border-color: #fca5a5; color: var(--red); }
+.m-topbar-btn.logout:active { background: #fff1f2; }
+
+/* Content */
+.m-content { flex: 1; overflow-y: auto; padding: 12px; padding-bottom: 72px; -webkit-overflow-scrolling: touch; }
+.m-page { display: none; }
+.m-page.active { display: block; }
+
+/* Bottom tab bar */
+.m-tabbar {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 56px;
+  background: var(--surface); border-top: 1px solid var(--border);
+  display: flex; z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.m-tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text3); font-size: 10px; font-weight: 500; gap: 2px;
+  border: none; background: none; padding: 0; position: relative; font-family: inherit;
+  transition: color .15s;
+}
+.m-tab.active { color: var(--accent); }
+.m-tab svg { width: 22px; height: 22px; }
+/* auth.js가 추가하는 nav-lock 아이콘 위치 조정 */
+.m-tab .nav-lock { position: absolute; top: 3px; right: calc(50% - 18px); font-size: 9px; }
+
+/* Cards */
+.m-card { background: var(--surface); border-radius: 12px; box-shadow: var(--sh); padding: 14px; margin-bottom: 10px; }
+.m-card-header { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+
+/* Selectors */
+.m-sel-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+.m-sel {
+  flex: 1; min-height: 44px; padding: 0 28px 0 10px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239aa3b2' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+  color: var(--text); font-size: 13px; font-family: inherit;
+  -webkit-appearance: none; appearance: none; cursor: pointer;
+}
+.m-sel:focus { outline: none; border-color: var(--accent); }
+
+/* Year nav */
+.m-year-nav { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.m-year-btn {
+  min-width: 36px; min-height: 44px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface2); cursor: pointer; font-size: 20px; color: var(--text2);
+  display: flex; align-items: center; justify-content: center; transition: background .15s;
+  font-family: inherit;
+}
+.m-year-btn:active { background: var(--bg); }
+.m-year-txt { font-size: 14px; font-weight: 600; white-space: nowrap; }
+
+/* Month grid */
+.m-month-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
+.m-month-btn {
+  min-height: 44px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface2); font-size: 12px; color: var(--text2);
+  cursor: pointer; transition: all .15s; font-family: inherit;
+}
+.m-month-btn.active { background: var(--accent2); color: var(--accent); border-color: var(--accent3); font-weight: 600; }
+.m-month-btn:active { opacity: .7; }
+
+/* Net card */
+.m-net-card {
+  background: linear-gradient(135deg, #3b5bdb 0%, #4f81f7 100%);
+  color: #fff; border-radius: 14px; padding: 18px 16px; margin-bottom: 10px;
+  box-shadow: 0 4px 16px rgba(59,91,219,.22);
+}
+.m-net-label { font-size: 11px; opacity: .85; margin-bottom: 3px; }
+.m-net-amount { font-size: 30px; font-weight: 700; letter-spacing: -1px; line-height: 1.1; }
+.m-net-sub { font-size: 11px; opacity: .7; margin-top: 5px; }
+
+/* Status badge */
+.m-status { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
+.m-status-saved  { background: #f0fdf4; color: #166534; }
+.m-status-approx { background: var(--orange2); color: #92400e; }
+.m-status-gas    { background: #eff6ff; color: #1d4ed8; }
+.m-status-empty  { background: var(--surface2); color: var(--text3); }
+
+/* Pay rows */
+.m-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 0; border-bottom: 1px solid var(--border2); font-size: 13px;
+}
+.m-row:last-child { border-bottom: none; padding-bottom: 0; }
+.m-row-label { color: var(--text2); }
+.m-row-val { font-weight: 500; }
+.m-row-val.zero { color: var(--text3); }
+.m-row-val.neg  { color: var(--red); }
+.m-total-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0 0; margin-top: 6px; border-top: 2px solid var(--border);
+  font-size: 14px; font-weight: 600;
+}
+
+/* Annual */
+.m-annual-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 11px 12px; margin-bottom: 7px;
+}
+.m-annual-month { font-size: 13px; font-weight: 600; color: var(--accent); min-width: 28px; }
+.m-annual-vals { flex: 1; display: flex; gap: 5px; flex-wrap: wrap; }
+.m-annual-badge { font-size: 11px; padding: 2px 6px; border-radius: 10px; background: var(--surface2); color: var(--text2); }
+.m-annual-net { font-size: 14px; font-weight: 700; color: var(--text); min-width: 78px; text-align: right; }
+.m-annual-total {
+  background: var(--accent2); border: 1px solid var(--accent3); border-radius: 10px;
+  padding: 12px 14px; margin-top: 4px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px; font-weight: 600; color: var(--accent);
+}
+
+/* Employee list */
+.m-emp-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 13px; margin-bottom: 8px;
+  cursor: pointer; transition: background .15s;
+}
+.m-emp-item:active { background: var(--surface2); }
+.m-emp-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--accent2); color: var(--accent);
+  font-size: 16px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.m-emp-info { flex: 1; min-width: 0; }
+.m-emp-name { font-size: 14px; font-weight: 600; }
+.m-emp-sub  { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.m-emp-arrow { color: var(--text3); font-size: 18px; }
+
+/* Employee detail */
+.m-back-btn {
+  display: flex; align-items: center; gap: 5px; min-height: 44px; padding: 0;
+  background: none; border: none; cursor: pointer;
+  color: var(--accent); font-size: 13px; font-weight: 600;
+  font-family: inherit; margin-bottom: 10px;
+}
+.m-detail-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 9px 0; border-bottom: 1px solid var(--border2); font-size: 13px;
+}
+.m-detail-row:last-child { border-bottom: none; }
+.m-detail-label { color: var(--text3); font-size: 12px; padding-top: 1px; flex-shrink: 0; }
+.m-detail-val { color: var(--text); font-weight: 500; text-align: right; padding-left: 10px; word-break: break-all; }
+
+/* Placeholder / empty */
+.m-placeholder { text-align: center; padding: 36px 16px; color: var(--text3); font-size: 13px; line-height: 1.7; }
+.m-placeholder-icon { font-size: 30px; margin-bottom: 8px; }
+
+/* Toast (overrides utils.js toast position for mobile) */
+.showToast { bottom: 68px !important; }
+</style>
+</head>
+<body>
+
+<script>
+/* PC에서 접속 시 index.html로 리다이렉트 */
+if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+  location.replace('index.html');
+}
+</script>
+
+<!-- ══ LOGIN OVERLAY (auth.js 호환 — 구조 동일) ══ -->
+<div id="login-overlay" style="display:flex;position:fixed;inset:0;background:#f1f5f9;align-items:center;justify-content:center;z-index:9999;">
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:40px 36px;width:320px;box-shadow:0 8px 32px rgba(0,0,0,.10);">
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="font-size:22px;font-weight:700;color:#4f46e5;">WisePay</div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:5px;">給与Pro by Wisewires</div>
+    </div>
+    <div style="margin-bottom:13px;">
+      <div style="font-size:11px;color:#64748b;margin-bottom:5px;font-weight:500;">ID</div>
+      <input type="text" id="login-id" autocomplete="username" onkeydown="loginOnEnter(event)"
+        style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#fff;color:#1e293b;box-sizing:border-box;outline:none;"
+        onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#e2e8f0'">
+    </div>
+    <div style="margin-bottom:6px;">
+      <div style="font-size:11px;color:#64748b;margin-bottom:5px;font-weight:500;">パスワード / 비밀번호</div>
+      <input type="password" id="login-pw" autocomplete="current-password" onkeydown="loginOnEnter(event)"
+        style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:#1e293b;box-sizing:border-box;outline:none;"
+        onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#e2e8f0'">
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#64748b;user-select:none;">
+        <input type="checkbox" id="login-save-id" style="width:16px;height:16px;cursor:pointer;accent-color:#4f46e5;">
+        IDを保存 / 아이디 저장
+      </label>
+    </div>
+    <div id="login-err" style="color:#ef4444;font-size:12px;min-height:18px;margin-bottom:6px;"></div>
+    <button id="login-btn" onclick="doLogin()"
+      style="width:100%;padding:12px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;"
+      onmouseover="this.style.background='#4338ca'" onmouseout="this.style.background='#4f46e5'">ログイン / 로그인</button>
+  </div>
+</div>
+
+<!-- auth.js가 show/hide하는 #layout (모바일에서는 CSS로 강제 숨김) -->
+<div id="layout"></div>
+
+<!-- ══ MOBILE APP SHELL ══ -->
+<div id="m-app" class="m-app hidden">
+
+  <!-- Top bar -->
+  <div class="m-topbar">
+    <div class="topbar-l">
+      <span class="m-app-name">WisePay</span>
+      <span class="m-app-sub">Mobile</span>
+    </div>
+    <button class="m-topbar-btn" id="m-lang-btn" onclick="mToggleLang()">한국어</button>
+    <button class="m-topbar-btn logout" onclick="doLogout()">
+      <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6"/>
+      </svg>
+      <span id="m-logout-txt">로그아웃</span>
+    </button>
+  </div>
+
+  <!-- Scrollable content -->
+  <div class="m-content">
+
+    <!-- ── 급여 명세 ── -->
+    <div class="m-page active" id="m-page-payroll">
+      <div class="m-sel-row">
+        <select id="m-emp-sel" class="m-sel" onchange="mOnEmpChange()"></select>
+      </div>
+      <div class="m-sel-row">
+        <div class="m-year-nav">
+          <button class="m-year-btn" onclick="mChangeYear(-1)">‹</button>
+          <span class="m-year-txt" id="m-year-txt"></span>
+          <button class="m-year-btn" onclick="mChangeYear(1)">›</button>
+        </div>
+      </div>
+      <div class="m-month-grid" id="m-month-grid"></div>
+      <div id="m-payroll-out"></div>
+    </div>
+
+    <!-- ── 임금대장 ── -->
+    <div class="m-page" id="m-page-annual">
+      <div class="m-sel-row">
+        <select id="m-annual-emp" class="m-sel" onchange="mRenderAnnual()"></select>
+        <div class="m-year-nav">
+          <button class="m-year-btn" onclick="mAnnualYear(-1)">‹</button>
+          <span class="m-year-txt" id="m-annual-year-txt"></span>
+          <button class="m-year-btn" onclick="mAnnualYear(1)">›</button>
+        </div>
+      </div>
+      <div id="m-annual-out"></div>
+    </div>
+
+    <!-- ── 사원 관리 ── -->
+    <div class="m-page" id="m-page-employees">
+      <div id="m-emp-list"></div>
+      <div id="m-emp-detail" style="display:none;">
+        <button class="m-back-btn" onclick="mShowEmpList()">‹ <span id="m-back-txt">목록으로</span></button>
+        <div id="m-emp-detail-body"></div>
+      </div>
+    </div>
+
+  </div><!-- /m-content -->
+
+  <!-- Bottom tab bar -->
+  <div class="m-tabbar">
+    <button class="m-tab nav-item active" data-page="payroll" onclick="mGotoTab('payroll',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <rect x="5" y="2" width="14" height="20" rx="2"/>
+        <line x1="9" y1="8" x2="15" y2="8"/>
+        <line x1="9" y1="12" x2="15" y2="12"/>
+        <line x1="9" y1="16" x2="12" y2="16"/>
+      </svg>
+      <span id="m-tab-p">급여 명세</span>
+    </button>
+    <button class="m-tab nav-item" data-page="annual" onclick="mGotoTab('annual',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+        <line x1="8" y1="14" x2="16" y2="14"/>
+      </svg>
+      <span id="m-tab-a">임금대장</span>
+    </button>
+    <button class="m-tab nav-item" data-page="employees" onclick="mGotoTab('employees',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+      <span id="m-tab-e">사원 관리</span>
+    </button>
+  </div>
+
+</div><!-- /m-app -->
+
+<!-- Access Denied Modal (auth.js 호환) -->
+<div id="modal-access-denied" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:10000;">
+  <div style="background:#fff;border-radius:14px;padding:32px 24px;width:290px;box-shadow:0 8px 32px rgba(0,0,0,.18);text-align:center;">
+    <div style="font-size:32px;margin-bottom:12px;">🔒</div>
+    <div style="font-size:14px;color:#1e293b;margin-bottom:6px;font-weight:500;line-height:1.6;">このページへのアクセス権限がありません。</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:22px;line-height:1.6;">이 페이지에 접근할 권한이 없습니다.</div>
+    <button id="btn-access-denied-ok" onclick="closeAccessDenied()"
+      style="padding:10px 36px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">확인</button>
+  </div>
+</div>
+
+<!-- ══ SCRIPTS ══ -->
+
+<!-- auth.js가 요구하는 함수들을 먼저 stub으로 정의 -->
+<script>
+'use strict';
+function applyLang()           { if (typeof mApplyLang === 'function') mApplyLang(); }
+function initApp()             { if (typeof mInitApp  === 'function') mInitApp(); }
+function updateRatesDisplay()  {}
+function recalc()              {}
+function addNotification()     {}
+function updateGasStatus()     {}
+function gasAppendLog()        {}
+function gasRequest()          { return Promise.resolve({}); }
+function autoLoadFromGas()     {}
+function checkBackupReminder() {}
+function renderBackupFolderStatus() {}
+function checkRateBanner()     {}
+function buildHistEmpSel()     {}
+function buildAnnualYearSel()  {}
+function buildAnnualEmpSel()   {}
+function renderAnnual()        {}
+function renderHistory()       {}
+function renderNotificationsPage() {}
+function renderMonthTabs()     {}
+function renderEmpSelect()     {}
+function renderRatesPage()     {}
+function renderEmpList()       {}
+function openModal(id)         {}
+function closeModal(id)        {}
+function openGasModal()        {}
+function saveRateHistory()     {}
+function uploadRateHistoryToGas() {}
+function migratePayrollKeys()  {}
+
+/* getRatesForYM / applyRatesForYM — rates.js 의존 없이 인라인 구현 */
+function getRatesForYM(year, month) {
+  const ym = `${year}-${String(month).padStart(2,'0')}`;
+  const sorted = [...rateHistory].sort((a,b) => a.from > b.from ? -1 : 1);
+  const found  = sorted.find(r => r.from <= ym);
+  if (found) return {...found};
+  const oldest = [...rateHistory].sort((a,b) => a.from > b.from ? 1 : -1)[0];
+  return oldest ? {...oldest} : {from:'2026-04',kenko:9.85,kaigo:1.62,kodomo:0.23,nenkin:18.30,koyo:0.50};
+}
+function applyRatesForYM(year, month) {
+  const r = getRatesForYM(year, month);
+  rates = {kenko:r.kenko, kaigo:r.kaigo, kodomo:r.kodomo, nenkin:r.nenkin, koyo:r.koyo};
+}
+</script>
+
+<script src="js/state.js"></script>
+<script src="js/tax-tables.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+
+<!-- ══ MOBILE APP LOGIC ══ -->
+<script>
+'use strict';
+
+/* ── 상태 ── */
+const M_YEAR_K  = 'wisepay_m_year';
+const M_MON_K   = 'wisepay_m_month';
+const M_AY_K    = 'wisepay_m_annual_year';
+
+let mY   = new Date().getFullYear();
+let mM   = new Date().getMonth() + 1;
+let mEmp = -1;
+let mAY  = new Date().getFullYear();
+let mTab = 'payroll';
+
+/* ── 초기화 ── */
+function mInitApp() {
+  try { const s = localStorage.getItem(LS.emp); if (s) {
+    employees = JSON.parse(s).filter(e => e && !e.deleted);
+    employees.forEach(e => {
+      if (e.shaho_start) e.shaho_start = normalizeYM(e.shaho_start);
+      if (e.join)        e.join        = normalizeDate(e.join);
+      if (e.leave)       e.leave       = normalizeDate(e.leave);
+      if (e.birth)       e.birth       = normalizeDate(e.birth);
+    });
+  }} catch(e) {}
+  try { const s = localStorage.getItem(LS.rateHistory); if (s) rateHistory = JSON.parse(s); } catch(e) {}
+  try { const s = localStorage.getItem(LS.deletedEmpIds); if (s) deletedEmpIds = JSON.parse(s); } catch(e) {}
+  try { const s = localStorage.getItem(LS.rates); if (s) { const r = JSON.parse(s); rates = {...rates,...r}; } } catch(e) {}
+
+  mY  = parseInt(localStorage.getItem(M_YEAR_K))  || new Date().getFullYear();
+  mM  = parseInt(localStorage.getItem(M_MON_K))   || new Date().getMonth() + 1;
+  mAY = parseInt(localStorage.getItem(M_AY_K))    || new Date().getFullYear();
+
+  document.getElementById('m-app').classList.remove('hidden');
+
+  if (typeof applyViewerRestrictions === 'function') applyViewerRestrictions();
+  mApplyLang();
+  mRenderEmpSels();
+  mRenderMonthGrid();
+  mRenderPayroll();
+  mRenderAnnual();
+  mRenderEmpList();
+}
+
+/* ── 언어 ── */
+function mApplyLang() {
+  const jp = LANG === 'JP';
+  document.documentElement.lang = jp ? 'ja' : 'ko';
+  const setT = (id, j, k) => { const el = document.getElementById(id); if (el) el.textContent = jp ? j : k; };
+  setT('m-lang-btn',   '한국어로 전환', '日本語に切替');
+  setT('m-logout-txt', 'ログアウト',    '로그아웃');
+  setT('m-tab-p',      '給与明細',      '급여 명세');
+  setT('m-tab-a',      '賃金台帳',      '임금대장');
+  setT('m-tab-e',      '従業員管理',    '사원 관리');
+  setT('m-back-txt',   '一覧へ',        '목록으로');
+  const badge = document.querySelector('.viewer-badge');
+  if (badge) badge.textContent = jp ? '閲覧専用' : '열람 전용';
+}
+
+function mToggleLang() {
+  LANG = LANG === 'JP' ? 'KR' : 'JP';
+  localStorage.setItem(LS.lang, LANG);
+  mApplyLang();
+  mRenderEmpSels();
+  mRenderMonthGrid();
+  mRenderPayroll();
+  mRenderAnnual();
+  mRenderEmpList();
+  showToast(LANG === 'JP' ? '日本語に切り替えました' : '한국어로 전환했습니다', 's');
+}
+
+/* ── 탭 전환 ── */
+function mGotoTab(id, el) {
+  if (typeof canAccessPage === 'function' && !canAccessPage(id)) {
+    showAccessDenied(); return;
+  }
+  mTab = id;
+  document.querySelectorAll('.m-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.m-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('m-page-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  if (id === 'employees') { mShowEmpList(); mRenderEmpList(); }
+  if (id === 'annual')    mRenderAnnual();
+}
+
+/* ── 사원 셀렉터 (급여 명세 / 임금대장 공통) ── */
+function mRenderEmpSels() {
+  const jp = LANG === 'JP';
+  const blank = jp ? '── 従業員を選択 ──' : '── 사원 선택 ──';
+  ['m-emp-sel', 'm-annual-emp'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = `<option value="-1">${blank}</option>`;
+    employees.forEach((e, i) => {
+      const o = document.createElement('option');
+      o.value = i; o.textContent = `${String(e.no).padStart(4,'0')} ${e.name}`;
+      sel.appendChild(o);
+    });
+    sel.value = prev !== '-1' ? prev : '-1';
+  });
+  // 현재 선택 복원
+  const empSel = document.getElementById('m-emp-sel');
+  if (empSel && mEmp >= 0 && mEmp < employees.length) empSel.value = mEmp;
+  document.getElementById('m-annual-year-txt').textContent = mAY + (jp ? '年' : '년');
+}
+
+function mOnEmpChange() {
+  const v = parseInt(document.getElementById('m-emp-sel').value);
+  mEmp = isNaN(v) ? -1 : v;
+  mRenderPayroll();
+}
+
+/* ── 월/년 선택 ── */
+function mChangeYear(d) {
+  mY += d; mM = d < 0 ? 12 : 1;
+  localStorage.setItem(M_YEAR_K, mY); localStorage.setItem(M_MON_K, mM);
+  mRenderMonthGrid(); mRenderPayroll();
+}
+
+function mSelectMonth(m) {
+  mM = m; localStorage.setItem(M_MON_K, mM);
+  mRenderMonthGrid(); mRenderPayroll();
+}
+
+function mRenderMonthGrid() {
+  const jp = LANG === 'JP';
+  const u  = jp ? '月' : '월';
+  document.getElementById('m-year-txt').textContent = mY + (jp ? '年' : '년');
+  const grid = document.getElementById('m-month-grid');
+  grid.innerHTML = '';
+  for (let m = 1; m <= 12; m++) {
+    const b = document.createElement('button');
+    b.className = 'm-month-btn' + (m === mM ? ' active' : '');
+    b.textContent = m + u;
+    b.onclick = () => mSelectMonth(m);
+    grid.appendChild(b);
+  }
+}
+
+/* ── 급여 계산 (순수 함수, DOM 조작 없음) ── */
+function mCalc(emp, year, month) {
+  if (!emp) return null;
+  const pNo = String(emp.no).padStart(4,'0');
+  const raw = localStorage.getItem(`kyuyo_p_${pNo}_${year}_${month}`);
+  if (!raw) return null;
+
+  let d; try { d = JSON.parse(raw); } catch(e) { return null; }
+
+  const pv = f => parseInt(String(d[f] !== undefined ? d[f] : 0).replace(/,/g,'')) || 0;
+  const hasPF = PFIELDS.some(f => pv(f) !== 0);
+  const isGas = !!(d.totalPay || d.kenko || d.net);
+
+  /* GAS 요약 포맷 (PFIELD 없이 totalPay/net만 존재) */
+  if (!hasPF && isGas) {
+    const tp  = parseInt(String(d.totalPay || 0).replace(/,/g,'')) || 0;
+    const net = parseInt(String(d._net || d.net || 0).replace(/,/g,'')) || 0;
+    const kj  = parseInt(String(d.totalKojo || 0).replace(/,/g,'')) || 0;
+    if (tp === 0 && net === 0) return null;
+    return {
+      status:'gas', totalPay:tp, totalKojo:kj || tp - net, net,
+      kenko:pv('kenko'), kaigo:0, kodomo:0, nenkin:pv('nenkin'),
+      koyo:pv('koyo'), shotoku:pv('shotoku'), jumin:0, nencho:0,
+      base:tp, ot:0, kintai:0, commute:0, commutetax:0, kinmu:0, shokumu:0, field:0,
+      hyo:0, hyo_override:0, isGas:true
+    };
+  }
+  if (!hasPF) return null;
+
+  const base=pv('r-base'), ot=pv('r-ot'), kintai=pv('r-kintai');
+  const commute=pv('r-commute'), commutetax=pv('r-commutetax');
+  const kinmu=pv('r-kinmu'), shokumu=pv('r-shokumu'), field=pv('r-field');
+  const hyo_override=pv('r-hyo'), jumin=pv('k-jumin'), nencho=pv('k-nencho');
+
+  const totalPay = base + ot - kintai + commute + commutetax + kinmu + shokumu + field;
+  if (totalPay === 0 && hyo_override === 0 && jumin === 0 && nencho === 0) return null;
+
+  applyRatesForYM(year, month);
+  const hyo = hyo_override > 0 ? hyo_override
+    : getHyo(base - kintai + commute + commutetax + kinmu + shokumu + field);
+
+  const shahoParts = emp.shaho_start ? emp.shaho_start.split('-') : null;
+  const shahoFrom  = shahoParts ? parseInt(shahoParts[0])*100 + parseInt(shahoParts[1]) : 0;
+  const exempt     = shahoFrom > 0 && (year*100 + month) < shahoFrom;
+
+  const isKaigo = emp.kaigo === 'yes' ? true : emp.kaigo === 'no' ? false
+    : (emp.birth ? (year - parseInt(emp.birth.substring(0,4))) >= 40 : false);
+
+  const kenko  = exempt ? 0 : Math.floor(hyo * rates.kenko  / 100 / 2);
+  const kaigo  = exempt ? 0 : (isKaigo ? Math.floor(hyo * rates.kaigo / 100 / 2) : 0);
+  const kodomo = exempt ? 0 : Math.floor(hyo * rates.kodomo / 100 / 2);
+  const nenkin = exempt ? 0 : Math.floor(hyo * rates.nenkin / 100 / 2);
+  const koyoOn = !exempt && emp.koyo !== 'no';
+  const koyo   = koyoOn ? Math.round(totalPay * rates.koyo / 100) : 0;
+
+  const shakai     = kenko + kaigo + kodomo + nenkin + koyo;
+  const shotokuBase = totalPay - commute - shakai;
+  const fuyou      = parseInt(emp.fuyouCount) || 0;
+  const isOtsu     = (emp.shotokuKbn || 'ko') === 'otsu';
+  const shotoku    = Math.max(0, calcShotoku(shotokuBase, fuyou, isOtsu, year, month));
+
+  const totalKojo = shakai + shotoku + jumin + nencho;
+  const net       = totalPay - totalKojo;
+
+  return {
+    status:'saved', base, ot, kintai, commute, commutetax, kinmu, shokumu, field,
+    hyo_override, jumin, nencho, hyo, isKaigo, koyoOn,
+    totalPay, kenko, kaigo, kodomo, nenkin, koyo, shotoku, totalKojo, net
+  };
+}
+
+/* ── 급여 명세 렌더링 ── */
+function mRenderPayroll() {
+  const jp  = LANG === 'JP';
+  const out = document.getElementById('m-payroll-out');
+  const f   = n => n === 0 ? '0' : Math.round(n).toLocaleString();
+
+  if (mEmp < 0 || mEmp >= employees.length) {
+    out.innerHTML = `<div class="m-placeholder"><div class="m-placeholder-icon">📋</div>${jp?'従業員を選択してください':'사원을 선택해 주세요'}</div>`;
+    return;
+  }
+
+  const emp  = employees[mEmp];
+  const calc = mCalc(emp, mY, mM);
+
+  if (!calc) {
+    out.innerHTML = `<div class="m-placeholder"><div class="m-placeholder-icon">📭</div>${jp?'この月のデータはありません':'이 달 데이터가 없습니다'}</div>`;
+    return;
+  }
+
+  const statusMap = {
+    saved: ['m-status-saved', jp?'✅ 保存済み':'✅ 저장됨'],
+    gas:   ['m-status-gas',   jp?'📡 GASデータ':'📡 GAS 데이터'],
+  };
+  const [sCls, sTxt] = statusMap[calc.status] || ['m-status-empty', ''];
+
+  /* 지급 항목 */
+  const payRows = [
+    [jp?'月給':'월급',           calc.base],
+    [jp?'残業手当':'잔업수당',     calc.ot],
+    [jp?'非課税通勤費':'비과세 교통비', calc.commute],
+    [jp?'課税通勤費':'과세 교통비',    calc.commutetax],
+    [jp?'勤務手当':'근무수당',         calc.kinmu],
+    [jp?'職務手当':'직무수당',         calc.shokumu],
+    [jp?'現場手当':'현장수당',         calc.field],
+  ].filter(([,v]) => v !== 0).map(([l,v]) =>
+    `<div class="m-row"><span class="m-row-label">${l}</span><span class="m-row-val">¥${f(v)}</span></div>`
+  ).join('');
+
+  const kintaiRow = calc.kintai > 0
+    ? `<div class="m-row"><span class="m-row-label">${jp?'根太公除(-)':'근태공제(-)'}</span><span class="m-row-val neg">-¥${f(calc.kintai)}</span></div>` : '';
+
+  /* 공제 항목 — 주요 6항목은 항상 표시, 주민세·연말정산은 값 있을 때만 */
+  const deductRows = [
+    [jp?'健康保険料':'건강보험료', calc.kenko, calc.kenko===0],
+    [jp?'介護保険料':'개호보험료', calc.kaigo, !calc.isKaigo],
+    [jp?'子育て支援金':'자녀지원금', calc.kodomo, calc.kodomo===0],
+    [jp?'厚生年金':'후생연금',    calc.nenkin, calc.nenkin===0],
+    [jp?'雇用保険料':'고용보험료',  calc.koyo, !calc.koyoOn],
+    [jp?'所得税':'소득세',        calc.shotoku, calc.shotoku===0],
+    ...(calc.jumin  !== 0 ? [[jp?'住民税':'주민세',   calc.jumin,  false]] : []),
+    ...(calc.nencho !== 0 ? [[jp?'年末調整':'연말정산', calc.nencho, false]] : []),
+  ].map(([l,v,zero]) =>
+    `<div class="m-row"><span class="m-row-label">${l}</span><span class="m-row-val${zero?' zero':''}">${zero?'—':'¥'+f(v)}</span></div>`
+  ).join('');
+
+  out.innerHTML = `
+    <span class="m-status ${sCls}">${sTxt}</span>
+    <div class="m-net-card">
+      <div class="m-net-label">${jp?'差引総支給額（手取り）':'차인지급액'}</div>
+      <div class="m-net-amount">¥${f(calc.net)}</div>
+      <div class="m-net-sub">${emp.name} · ${mY}${jp?'年':'년'} ${mM}${jp?'月':'월'}분</div>
+    </div>
+    <div class="m-card">
+      <div class="m-card-header">${jp?'支給':'지급'}</div>
+      ${payRows}${kintaiRow}
+      ${payRows || kintaiRow ? '' : `<div class="m-row"><span style="color:var(--text3);font-size:12px;">${jp?'詳細データなし (GAS集計値)':'상세 데이터 없음 (GAS 집계값)'}</span></div>`}
+      <div class="m-total-row"><span>${jp?'支給合計':'지급 합계'}</span><span>¥${f(calc.totalPay)}</span></div>
+    </div>
+    <div class="m-card">
+      <div class="m-card-header">${jp?'控除':'공제'}</div>
+      ${deductRows}
+      <div class="m-total-row"><span>${jp?'控除合計':'공제 합계'}</span><span>¥${f(calc.totalKojo)}</span></div>
+    </div>`;
+}
+
+/* ── 임금대장 ── */
+function mAnnualYear(d) {
+  mAY += d; localStorage.setItem(M_AY_K, mAY);
+  document.getElementById('m-annual-year-txt').textContent = mAY + (LANG==='JP'?'年':'년');
+  mRenderAnnual();
+}
+
+function mRenderAnnual() {
+  const jp  = LANG === 'JP';
+  const sel = document.getElementById('m-annual-emp');
+  const idx = sel ? parseInt(sel.value) : -1;
+  document.getElementById('m-annual-year-txt').textContent = mAY + (jp?'年':'년');
+
+  const out = document.getElementById('m-annual-out');
+  if (isNaN(idx) || idx < 0 || idx >= employees.length) {
+    out.innerHTML = `<div class="m-placeholder"><div class="m-placeholder-icon">📊</div>${jp?'従業員を選択してください':'사원을 선택해 주세요'}</div>`;
+    return;
+  }
+
+  const emp = employees[idx];
+  const f   = n => n === 0 ? '0' : Math.round(n).toLocaleString();
+  let tNet=0, tPay=0, tKojo=0, rows='';
+
+  for (let m=1; m<=12; m++) {
+    const c  = mCalc(emp, mAY, m);
+    const mu = jp ? `${m}月` : `${m}월`;
+    if (!c) {
+      rows += `<div class="m-annual-item">
+        <span class="m-annual-month">${mu}</span>
+        <div class="m-annual-vals"><span class="m-annual-badge" style="color:var(--text3)">${jp?'データなし':'데이터 없음'}</span></div>
+        <span class="m-annual-net" style="color:var(--text3)">—</span>
+      </div>`;
+    } else {
+      tNet += c.net; tPay += c.totalPay; tKojo += c.totalKojo;
+      rows += `<div class="m-annual-item">
+        <span class="m-annual-month">${mu}</span>
+        <div class="m-annual-vals">
+          <span class="m-annual-badge">${jp?'支給':'지급'} ¥${f(c.totalPay)}</span>
+          <span class="m-annual-badge">${jp?'控除':'공제'} ¥${f(c.totalKojo)}</span>
+        </div>
+        <span class="m-annual-net">¥${f(c.net)}</span>
+      </div>`;
+    }
+  }
+
+  const hasData = tPay > 0 || tNet !== 0;
+  const totalHtml = hasData ? `<div class="m-annual-total">
+    <span>${jp?'年間合計':'연간 합계'}</span>
+    <div style="text-align:right;line-height:1.7;">
+      <div style="font-size:11px;font-weight:400;">${jp?'支給':'지급'} ¥${f(tPay)} · ${jp?'控除':'공제'} ¥${f(tKojo)}</div>
+      <div>${jp?'手取り合計':'실수령 합계'} ¥${f(tNet)}</div>
+    </div>
+  </div>` : '';
+
+  out.innerHTML = `
+    <div class="m-card" style="margin-bottom:10px;">
+      <div style="font-size:14px;font-weight:700;">${emp.name}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px;">${jp?'社員番号':'사원번호'}: ${String(emp.no).padStart(4,'0')}</div>
+    </div>
+    ${rows}${totalHtml}`;
+}
+
+/* ── 사원 관리 ── */
+function mRenderEmpList() {
+  const jp  = LANG === 'JP';
+  const wrap = document.getElementById('m-emp-list');
+  if (!employees.length) {
+    wrap.innerHTML = `<div class="m-placeholder"><div class="m-placeholder-icon">👤</div>${jp?'従業員が登録されていません':'사원이 없습니다'}</div>`;
+    return;
+  }
+  wrap.innerHTML = employees.map((e, i) => {
+    const init = (e.name || '?').charAt(0);
+    const sub  = e.join ? (jp?`入社: `:`입사: `) + e.join.substring(0,7) : (jp?'情報なし':'정보 없음');
+    return `<div class="m-emp-item" onclick="mShowEmpDetail(${i})">
+      <div class="m-emp-avatar">${init}</div>
+      <div class="m-emp-info">
+        <div class="m-emp-name">${e.name}</div>
+        <div class="m-emp-sub">${String(e.no).padStart(4,'0')} · ${sub}${e.leave?' · '+(jp?'退社: ':'퇴사: ')+e.leave.substring(0,7):''}</div>
+      </div>
+      <span class="m-emp-arrow">›</span>
+    </div>`;
+  }).join('');
+}
+
+function mShowEmpDetail(idx) {
+  const jp  = LANG === 'JP';
+  const emp = employees[idx];
+  if (!emp) return;
+
+  document.getElementById('m-emp-list').style.display    = 'none';
+  document.getElementById('m-emp-detail').style.display  = 'block';
+
+  const kaigoStr  = emp.kaigo==='yes'?(jp?'対象':'대상'):emp.kaigo==='no'?(jp?'対象外':'비대상'):(jp?'年齢自動':'나이 자동');
+  const koyoStr   = emp.koyo==='no'?(jp?'未加入':'미가입'):(jp?'加入':'가입');
+  const shotokuStr= (emp.shotokuKbn||'ko')==='otsu'?(jp?'乙欄':'을란'):(jp?'甲欄':'갑란');
+  const shahoStr  = emp.shaho_start ? fmtYM(emp.shaho_start) : (jp?'入社時から':'입사 시부터');
+  const fuyouStr  = (emp.fuyouCount||0) > 0 ? `${emp.fuyouCount}${jp?'人':'명'}` : (jp?'なし':'없음');
+
+  const rows = [
+    [jp?'氏名':'이름',         emp.name],
+    [jp?'社員番号':'사원번호',   String(emp.no).padStart(4,'0')],
+    ...(emp.kana ? [[jp?'カナ':'카나', emp.kana]] : []),
+    [jp?'入社日':'입사일',      emp.join  || '—'],
+    [jp?'退社日':'퇴사일',      emp.leave || (jp?'在職中':'재직 중')],
+    [jp?'生年月日':'생년월일',   emp.birth || '—'],
+    [jp?'社会保険加入':'사회보험',shahoStr],
+    [jp?'介護保険':'개호보험',   kaigoStr],
+    [jp?'雇用保険':'고용보험',   koyoStr],
+    [jp?'所得税区分':'소득세 구분', shotokuStr],
+    [jp?'扶養人数':'부양 인원',  fuyouStr],
+  ].map(([l,v]) => `<div class="m-detail-row"><span class="m-detail-label">${l}</span><span class="m-detail-val">${v}</span></div>`).join('');
+
+  document.getElementById('m-emp-detail-body').innerHTML = `
+    <div class="m-card">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div class="m-emp-avatar" style="width:48px;height:48px;font-size:20px;">${(emp.name||'?').charAt(0)}</div>
+        <div><div style="font-size:16px;font-weight:700;">${emp.name}</div>
+          <div style="font-size:11px;color:var(--text3);">No. ${String(emp.no).padStart(4,'0')}</div></div>
+      </div>
+      ${rows}
+    </div>`;
+}
+
+function mShowEmpList() {
+  document.getElementById('m-emp-list').style.display   = '';
+  document.getElementById('m-emp-detail').style.display = 'none';
+}
+
+/* ── DOMContentLoaded ── */
+window.addEventListener('DOMContentLoaded', () => {
+  LANG = localStorage.getItem(LS.lang) || 'JP';
+  mApplyLang();
+  if (!checkAuth()) return;
+  mInitApp();
+});
+</script>
+</body>
+</html>

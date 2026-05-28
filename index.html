@@ -5,11 +5,12 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-28 21:45 — auth.js: 접근 불가 팝업 엔터키 닫기 지원
+  수정: 2026-05-28 22:07 — mobile.html 신규: 모바일 자동 리다이렉트 추가
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WisePay - 급여계산시스템</title>
+<script>if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) location.replace('mobile.html');</script>
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
