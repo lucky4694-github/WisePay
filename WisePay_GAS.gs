@@ -1,15 +1,16 @@
 // WisePay GAS Script
-// 수정: 2026-05-27 23:40 — 로그 시트명 WisePay로그로 변경, 헤더 한국어화, 구버전 시트 자동 삭제
+// 수정: 2026-05-28 17:23 — users 시트 추가, verifyLogin 핸들러 구현
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
 // ⚠️ PDF 파싱 기능을 쓰려면:
 //   GAS 편집기 왼쪽 메뉴 「서비스(+)」→ Drive API v2 추가 필요
 
-const SHEET_EMP  = '사원정보';
-const SHEET_PAY  = '급여데이터';
-const SHEET_RATE = '보험료율데이터';
-const SHEET_LOG  = 'WisePay로그';
+const SHEET_EMP   = '사원정보';
+const SHEET_PAY   = '급여데이터';
+const SHEET_RATE  = '보험료율데이터';
+const SHEET_LOG   = 'WisePay로그';
+const SHEET_USERS = 'users';
 
 // 협회けんぽ URL (2025년 사이트 개편 후 변경된 URL)
 const KENPO_INDEX_URL = 'https://www.kyoukaikenpo.or.jp/about/business/insurance_rate/rate_prefectures/';
@@ -98,6 +99,30 @@ function doPost(e) {
         saveSheet(SHEET_PAY, merged);
       }
       return jsonResponse({ ok: true, count: incoming.length });
+    }
+    if (data.type === 'verifyLogin') {
+      var loginId   = String(data.id   || '').trim();
+      var loginHash = String(data.hash || '').toLowerCase().trim();
+      if (!loginId || !loginHash) return jsonResponse({ ok: false, error: 'Missing credentials' });
+      var usersSheet = getSheet(SHEET_USERS);
+      var users = sheetToObjects(usersSheet);
+      var matched = null;
+      for (var i = 0; i < users.length; i++) {
+        var u = users[i];
+        if (String(u['ID'] || '').trim() === loginId &&
+            String(u['PW_HASH'] || '').toLowerCase().trim() === loginHash) {
+          matched = u; break;
+        }
+      }
+      if (matched) {
+        return jsonResponse({ ok: true, user: {
+          id:          String(matched['ID']       || '').trim(),
+          name:        String(matched['이름']     || '').trim(),
+          role:        String(matched['권한']     || '').trim(),
+          sessionType: String(matched['세션타입'] || '').trim(),
+        }});
+      }
+      return jsonResponse({ ok: false });
     }
     return jsonResponse({ ok: false, error: 'Unknown type' });
   } catch(err) {

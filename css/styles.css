@@ -1,4 +1,4 @@
-﻿/* 수정: 2026-05-26 15:39 — 전월 대비 diff 색상 주식 스타일로 변경(up=빨강/dn=파랑/nc=회색) */
+﻿/* 수정: 2026-05-28 17:23 — 로그인 nav-lock 아이콘, 로그아웃 버튼 스타일 추가 */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
 :root {
   --bg:#f0f2f7; --surface:#fff; --surface2:#f8f9fc;
@@ -292,5 +292,10 @@ body{font-family:'Noto Sans JP','Noto Sans KR',sans-serif;background:var(--bg);c
 .showToast{position:fixed;bottom:18px;right:18px;background:var(--text);color:#fff;padding:9px 14px;border-radius:var(--r);font-size:13px;box-shadow:var(--sh2);z-index:500;opacity:0;transform:translateY(7px);transition:all .25s;pointer-events:none;max-width:280px;}
 .showToast.show{opacity:1;transform:translateY(0);}
 .showToast.s{background:var(--green);} .showToast.e{background:var(--red);} .showToast.w{background:var(--orange);}
+
+/* nav-lock icon for viewer role */
+.nav-lock{margin-left:auto;font-size:11px;opacity:0.65;flex-shrink:0;}
+.btn-logout{color:var(--red)!important;}
+.btn-logout:hover{background:var(--red2)!important;}
 
 @media print{.sidebar,.topbar,.rates-wrap,.calc-info,.btn,.banner,.showToast,.month-nav{display:none!important;}}

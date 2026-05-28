@@ -1,4 +1,4 @@
-// 수정: 2026-05-27 23:00 — deletedEmpIds 초기화 로드 추가
+// 수정: 2026-05-28 17:23 — gotoPage 권한 체크 추가, resetLocalData keepKeys 갱신
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -194,6 +194,10 @@ window.addEventListener('afterprint', () => {
 });
 
 function gotoPage(id, el) {
+  if (typeof canAccessPage === 'function' && !canAccessPage(id)) {
+    showAccessDenied();
+    return;
+  }
   const currentPage = document.querySelector('.page.active')?.id;
   // 사원 편집 중 다른 페이지로 이동 시 경고
   if(currentPage === 'page-employees' && id !== 'employees' && empFormDirty) {
@@ -245,7 +249,7 @@ function resetLocalData() {
   if (!confirm(msg)) return;
 
   // kyuyo_ 접두사 키 전체 삭제 (lang, auth 제외)
-  const keepKeys = new Set([LS.lang, 'wisepay_auth']);
+  const keepKeys = new Set([LS.lang, AUTH_SESS_KEY, AUTH_ID_KEY]);
   Object.keys(localStorage)
     .filter(k => k.startsWith('kyuyo_') && !keepKeys.has(k))
     .forEach(k => localStorage.removeItem(k));
