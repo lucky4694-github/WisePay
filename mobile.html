@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-28 22:15 — 접근 불가 팝업 폭 확대 (290→340px, 일본어 한 줄 표시)
+  수정: 2026-05-28 22:23 — 드롭다운 기본값 표시 수정, 월 드롭다운으로 변경, viewer 사원 관리 탭 숨김
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -259,7 +259,9 @@ if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     <!-- ── 급여 명세 ── -->
     <div class="m-page active" id="m-page-payroll">
       <div class="m-sel-row">
-        <select id="m-emp-sel" class="m-sel" onchange="mOnEmpChange()"></select>
+        <select id="m-emp-sel" class="m-sel" onchange="mOnEmpChange()">
+          <option value="-1">── 사원 선택 ──</option>
+        </select>
       </div>
       <div class="m-sel-row">
         <div class="m-year-nav">
@@ -267,15 +269,19 @@ if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
           <span class="m-year-txt" id="m-year-txt"></span>
           <button class="m-year-btn" onclick="mChangeYear(1)">›</button>
         </div>
+        <select id="m-month-sel" class="m-sel" onchange="mOnMonthChange()">
+          <option value="-1">── 월 선택 ──</option>
+        </select>
       </div>
-      <div class="m-month-grid" id="m-month-grid"></div>
       <div id="m-payroll-out"></div>
     </div>
 
     <!-- ── 임금대장 ── -->
     <div class="m-page" id="m-page-annual">
       <div class="m-sel-row">
-        <select id="m-annual-emp" class="m-sel" onchange="mRenderAnnual()"></select>
+        <select id="m-annual-emp" class="m-sel" onchange="mRenderAnnual()">
+          <option value="-1">── 사원 선택 ──</option>
+        </select>
         <div class="m-year-nav">
           <button class="m-year-btn" onclick="mAnnualYear(-1)">‹</button>
           <span class="m-year-txt" id="m-annual-year-txt"></span>
@@ -392,6 +398,15 @@ function applyRatesForYM(year, month) {
 <script src="js/tax-tables.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/auth.js"></script>
+<script>
+/* auth.js의 renderNavForRole을 모바일용으로 덮어씀:
+   viewer는 사원 관리 탭 자체를 숨김 (잠금 아이콘 표시 대신) */
+renderNavForRole = function() {
+  if (!currentUser || currentUser.role === 'admin') return;
+  const empTab = document.querySelector('.m-tab[data-page="employees"]');
+  if (empTab) empTab.style.display = 'none';
+};
+</script>
 
 <!-- ══ MOBILE APP LOGIC ══ -->
 <script>
@@ -432,7 +447,7 @@ function mInitApp() {
   if (typeof applyViewerRestrictions === 'function') applyViewerRestrictions();
   mApplyLang();
   mRenderEmpSels();
-  mRenderMonthGrid();
+  mRenderMonthSel();
   mRenderPayroll();
   mRenderAnnual();
   mRenderEmpList();
@@ -458,7 +473,7 @@ function mToggleLang() {
   localStorage.setItem(LS.lang, LANG);
   mApplyLang();
   mRenderEmpSels();
-  mRenderMonthGrid();
+  mRenderMonthSel();
   mRenderPayroll();
   mRenderAnnual();
   mRenderEmpList();
@@ -511,27 +526,30 @@ function mOnEmpChange() {
 function mChangeYear(d) {
   mY += d; mM = d < 0 ? 12 : 1;
   localStorage.setItem(M_YEAR_K, mY); localStorage.setItem(M_MON_K, mM);
-  mRenderMonthGrid(); mRenderPayroll();
+  mRenderMonthSel(); mRenderPayroll();
 }
 
-function mSelectMonth(m) {
-  mM = m; localStorage.setItem(M_MON_K, mM);
-  mRenderMonthGrid(); mRenderPayroll();
+function mOnMonthChange() {
+  const v = parseInt(document.getElementById('m-month-sel').value);
+  if (isNaN(v) || v < 1) return;
+  mM = v; localStorage.setItem(M_MON_K, mM);
+  mRenderPayroll();
 }
 
-function mRenderMonthGrid() {
-  const jp = LANG === 'JP';
-  const u  = jp ? '月' : '월';
-  document.getElementById('m-year-txt').textContent = mY + (jp ? '年' : '년');
-  const grid = document.getElementById('m-month-grid');
-  grid.innerHTML = '';
+function mRenderMonthSel() {
+  const jp  = LANG === 'JP';
+  const u   = jp ? '月' : '월';
+  const ph  = jp ? '── 月選択 ──' : '── 월 선택 ──';
+  const sel = document.getElementById('m-month-sel');
+  if (!sel) return;
+  sel.innerHTML = `<option value="-1">${ph}</option>`;
   for (let m = 1; m <= 12; m++) {
-    const b = document.createElement('button');
-    b.className = 'm-month-btn' + (m === mM ? ' active' : '');
-    b.textContent = m + u;
-    b.onclick = () => mSelectMonth(m);
-    grid.appendChild(b);
+    const o = document.createElement('option');
+    o.value = m; o.textContent = m + u;
+    if (m === mM) o.selected = true;
+    sel.appendChild(o);
   }
+  document.getElementById('m-year-txt').textContent = mY + (jp ? '年' : '년');
 }
 
 /* ── 급여 계산 (순수 함수, DOM 조작 없음) ── */
