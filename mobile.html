@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-28 22:07 — 신규 파일: 모바일 전용 조회 페이지 (하단 탭바, 카드형 UI)
+  수정: 2026-05-28 22:15 — 접근 불가 팝업 폭 확대 (290→340px, 일본어 한 줄 표시)
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -330,7 +330,7 @@ if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
 
 <!-- Access Denied Modal (auth.js 호환) -->
 <div id="modal-access-denied" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:10000;">
-  <div style="background:#fff;border-radius:14px;padding:32px 24px;width:290px;box-shadow:0 8px 32px rgba(0,0,0,.18);text-align:center;">
+  <div style="background:#fff;border-radius:14px;padding:32px 24px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,.18);text-align:center;">
     <div style="font-size:32px;margin-bottom:12px;">🔒</div>
     <div style="font-size:14px;color:#1e293b;margin-bottom:6px;font-weight:500;line-height:1.6;">このページへのアクセス権限がありません。</div>
     <div style="font-size:13px;color:#64748b;margin-bottom:22px;line-height:1.6;">이 페이지에 접근할 권한이 없습니다.</div>
