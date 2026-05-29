@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-28 22:54 — viewer 모드 GAS 직접 fetch, 저장 상태 표시 수정
+  수정: 2026-05-30 00:41 — viewer idle 자동 로그아웃 모달 + 비밀번호 눈 아이콘
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -216,9 +216,15 @@ if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     </div>
     <div style="margin-bottom:6px;">
       <div style="font-size:11px;color:#64748b;margin-bottom:5px;font-weight:500;">パスワード / 비밀번호</div>
-      <input type="password" id="login-pw" autocomplete="current-password" onkeydown="loginOnEnter(event)"
-        style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:#1e293b;box-sizing:border-box;outline:none;"
-        onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#e2e8f0'">
+      <div style="position:relative;">
+        <input type="password" id="login-pw" autocomplete="current-password" onkeydown="loginOnEnter(event)"
+          style="width:100%;padding:10px 36px 10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:#1e293b;box-sizing:border-box;outline:none;"
+          onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#e2e8f0'">
+        <button type="button" id="login-pw-eye" onclick="toggleLoginPw()" tabindex="-1"
+          style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:#94a3b8;display:flex;align-items:center;line-height:1;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
     </div>
     <div style="margin-bottom:10px;">
       <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:#64748b;user-select:none;">
@@ -344,6 +350,17 @@ if (!/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
     <div style="font-size:14px;color:#1e293b;margin-bottom:6px;font-weight:500;line-height:1.6;">このページへのアクセス権限がありません。</div>
     <div style="font-size:13px;color:#64748b;margin-bottom:22px;line-height:1.6;">이 페이지에 접근할 권한이 없습니다.</div>
     <button id="btn-access-denied-ok" onclick="closeAccessDenied()"
+      style="padding:10px 36px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">확인</button>
+  </div>
+</div>
+
+<!-- Idle Logout Modal -->
+<div id="modal-idle-logout" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:10001;">
+  <div style="background:#fff;border-radius:14px;padding:32px 24px;width:340px;box-shadow:0 8px 32px rgba(0,0,0,.18);text-align:center;">
+    <div style="font-size:32px;margin-bottom:14px;">⏰</div>
+    <div style="font-size:14px;color:#1e293b;margin-bottom:6px;font-weight:500;line-height:1.6;">長時間ご利用がなかったため、自動的にログアウトしました。</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:22px;line-height:1.6;">장시간 미사용으로 자동 로그아웃되었습니다.</div>
+    <button onclick="closeIdleLogoutModal()"
       style="padding:10px 36px;background:#4f46e5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">확인</button>
   </div>
 </div>

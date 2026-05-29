@@ -1,8 +1,54 @@
-// 수정: 2026-05-29 22:37 — viewer 차단 목록에 reinstateEmp, saveEmployee 추가
+// 수정: 2026-05-30 00:41 — viewer idle 자동 로그아웃(1시간) + 비밀번호 눈 아이콘
 'use strict';
 
 const AUTH_SESS_KEY = 'wisepay_session';
 const AUTH_ID_KEY   = 'wisepay_saved_id';
+
+// ── 비밀번호 눈 아이콘 SVG ──
+const _EYE_ON  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const _EYE_OFF = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
+function toggleLoginPw() {
+  const pw  = document.getElementById('login-pw');
+  const btn = document.getElementById('login-pw-eye');
+  if (!pw || !btn) return;
+  const show = pw.type === 'password';
+  pw.type    = show ? 'text' : 'password';
+  btn.innerHTML = show ? _EYE_OFF : _EYE_ON;
+}
+
+// ── Viewer idle 자동 로그아웃 ──
+const IDLE_TIMEOUT_MS = 60 * 60 * 1000; // 1시간
+let _idleTimer = null;
+
+function _onIdleActivity() { _startIdleTimer(); }
+
+function _startIdleTimer() {
+  if (_idleTimer) clearTimeout(_idleTimer);
+  _idleTimer = setTimeout(_idleLogout, IDLE_TIMEOUT_MS);
+}
+
+function _stopIdleTimer() {
+  if (_idleTimer) { clearTimeout(_idleTimer); _idleTimer = null; }
+  document.removeEventListener('click',   _onIdleActivity);
+  document.removeEventListener('keydown', _onIdleActivity);
+}
+
+function _idleLogout() {
+  _stopIdleTimer();
+  _clearSession();
+  const layout = document.getElementById('layout');
+  const overlay = document.getElementById('login-overlay');
+  if (layout)  layout.style.display  = 'none';
+  if (overlay) overlay.style.display = 'flex';
+  const modal = document.getElementById('modal-idle-logout');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeIdleLogoutModal() {
+  const modal = document.getElementById('modal-idle-logout');
+  if (modal) modal.style.display = 'none';
+}
 
 let currentUser  = null; // { id, name, role, sessionType }
 let _writeToken  = null; // admin 로그인 시만 설정, viewer는 null
@@ -137,6 +183,7 @@ function loginOnEnter(e) {
 }
 
 function doLogout() {
+  _stopIdleTimer();
   _clearSession();
   location.reload();
 }
@@ -223,4 +270,9 @@ function applyViewerRestrictions() {
   window.applyRates            = blocked;
   window.saveRateHistory       = blocked;
   window.downloadBackupExcel   = blocked;
+
+  // viewer idle 자동 로그아웃: click/keydown 감지, 1시간 무조작 시 로그아웃
+  document.addEventListener('click',   _onIdleActivity);
+  document.addEventListener('keydown', _onIdleActivity);
+  _startIdleTimer();
 }
