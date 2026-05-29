@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-29 23:40 — 사원번호 입력란 폭을 다른 필드와 동일하게 수정
+﻿// 수정: 2026-05-29 23:49 — 사원번호 1컬럼 단독 행 배치 (빈 셀로 줄바꿈)
 'use strict';
 
 let showResigned = false; // 퇴사자 포함 토글 상태
@@ -212,6 +212,7 @@ function renderEmpFormFields(emp, readOnly = false) {
         oninput="validateEmpNo(this);markDirty()" onblur="padEmpNo(this)"
         onkeydown="focusNext(event,'f-name')"${dis}>
     </div>
+    <div></div>
     <div class="form-group">
       <div class="form-label-block">
         <div class="form-label-row">
