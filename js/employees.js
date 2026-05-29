@@ -1,7 +1,45 @@
-﻿// 수정: 2026-05-29 22:37 — 퇴사 처리 UI 전면 개선 (뱃지·표시규칙·토글·읽기전용·재직복귀)
+﻿// 수정: 2026-05-29 23:19 — 삭제 버튼: 급여 데이터 없을 때만 활성화, 있으면 비활성화 + 안내
 'use strict';
 
 let showResigned = false; // 퇴사자 포함 토글 상태
+
+// 사원의 급여 데이터 존재 여부 확인
+function hasPayrollData(emp) {
+  const no = String(emp.no).padStart(4, '0');
+  for (let y = 2020; y <= 2030; y++) {
+    for (let m = 1; m <= 12; m++) {
+      if (localStorage.getItem(`kyuyo_p_${no}_${y}_${m}`)) return true;
+    }
+  }
+  return false;
+}
+
+// 재직 사원 편집 버튼 렌더링 — 급여 데이터 유무에 따라 삭제 버튼 활성/비활성
+function renderActiveEmpBtns(idx) {
+  const jp = LANG === 'JP';
+  const emp = employees[idx];
+  const hasPay = hasPayrollData(emp);
+  const btns = document.getElementById('empFormBtns');
+  if (!btns) return;
+
+  const hintMsg = jp
+    ? '給与データがある社員は削除できません。退職処理は退職日を入力してください。'
+    : '급여 데이터가 있는 사원은 삭제할 수 없습니다. 퇴사 처리는 퇴사일을 입력해 주세요.';
+
+  btns.style.display = 'flex';
+  btns.style.flexDirection = 'column';
+  btns.style.alignItems = 'flex-end';
+  btns.style.gap = '4px';
+  btns.innerHTML =
+    `<div style="display:flex;gap:6px;">` +
+    `<button class="btn btn-primary btn-sm" onclick="saveEmployee()">${jp?'保存':'저장'}</button>` +
+    (hasPay
+      ? `<button class="btn btn-danger btn-sm" disabled style="opacity:.4;cursor:not-allowed;">${jp?'削除':'삭제'}</button>`
+      : `<button class="btn btn-danger btn-sm" onclick="deleteEmp(${idx})">${jp?'削除':'삭제'}</button>`) +
+    `<button class="btn btn-sm" onclick="cancelEmpForm()">${jp?'キャンセル':'취소'}</button>` +
+    `</div>` +
+    (hasPay ? `<div style="font-size:calc(10px + var(--fs-delta));color:var(--text3);text-align:right;">${hintMsg}</div>` : '');
+}
 
 function isResigned(emp) {
   return !!(emp && emp.leave && emp.leave.trim());
@@ -126,12 +164,16 @@ function openEmpForm(idx) {
       renderEmpFormFields(emp, true);
     } else {
       title.textContent = jp ? `${emp.name} の編集` : `${emp.name} 편집`;
-      btns.innerHTML = `<button class="btn btn-primary btn-sm" onclick="saveEmployee()">${jp?'保存':'저장'}</button><button class="btn btn-danger btn-sm" onclick="deleteEmp(${idx})">${jp?'削除':'삭제'}</button><button class="btn btn-sm" onclick="cancelEmpForm()">${jp?'キャンセル':'취소'}</button>`;
       renderEmpFormFields(emp, false);
+      renderActiveEmpBtns(idx);
     }
   }
   renderEmpList();
-  document.getElementById('empFormBtns').style.display='flex';
+  // 재직 사원 편집 버튼은 renderActiveEmpBtns가 처리하므로 신규·퇴사자만 display 설정
+  if(idx === -1 || (idx !== -1 && isResigned(employees[idx]))) {
+    const btnsEl = document.getElementById('empFormBtns');
+    if(btnsEl) { btnsEl.style.display='flex'; btnsEl.style.flexDirection=''; btnsEl.style.alignItems=''; btnsEl.style.gap='6px'; }
+  }
 }
 
 function cancelEmpForm() {
@@ -899,7 +941,7 @@ function saveEmployee() {
     renderEmpFormFields(savedEmp, true);
   } else {
     if(title) title.textContent = jp ? `${name} の編集` : `${name} 편집`;
-    if(btns) btns.innerHTML = `<button class="btn btn-primary btn-sm" onclick="saveEmployee()">${jp?'保存':'저장'}</button><button class="btn btn-danger btn-sm" onclick="deleteEmp(${editingEmpIdx})">${jp?'削除':'삭제'}</button><button class="btn btn-sm" onclick="cancelEmpForm()">${jp?'キャンセル':'취소'}</button>`;
+    renderActiveEmpBtns(editingEmpIdx);
   }
   showToast(gasUrl
     ? (jp?'保存 & Google同期 ✓':'저장 & Google 동기화 ✓')
