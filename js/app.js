@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-30 01:30 — #8 rateHistory 초기값 수정, #11 migratePayrollKeys 연도 동적화
+﻿// 수정: 2026-05-30 01:45 — #13 catch 로깅 추가, #14 resetLocalData 전역 상태 초기화 보완
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -99,8 +99,8 @@ function initApp() {
   updateRatesDisplay();
   checkRateBanner();
   updateGasStatus();
-  try { buildHistEmpSel(); } catch(e) {}
-  try { buildAnnualYearSel(); buildAnnualEmpSel(); } catch(e) {}
+  try { buildHistEmpSel(); } catch(e) { console.error('buildHistEmpSel error:', e); }
+  try { buildAnnualYearSel(); buildAnnualEmpSel(); } catch(e) { console.error('buildAnnual error:', e); }
   setTimeout(() => onMonthYearChange(), 100);
   // 로그인 후 Google 시트에서 최신 데이터 자동 로드
   autoLoadFromGas();
@@ -261,6 +261,9 @@ function resetLocalData() {
 
   // 상태 변수 초기화
   employees = [];
+  deletedEmpIds = [];
+  gasDeletedEmpIds = [];
+  showResigned = false;
   rateHistory = [
     { from:'2024-03', kenko:9.98, kaigo:1.60, kodomo:0.00, nenkin:18.30, koyo:0.60 },
     { from:'2024-04', kenko:9.98, kaigo:1.60, kodomo:0.00, nenkin:18.30, koyo:0.60 },

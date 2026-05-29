@@ -1,4 +1,4 @@
-// 수정: 2026-05-29 23:40 — autoLoadFromGas: 급여 데이터 전체 동기화 정리 로직 추가
+// 수정: 2026-05-30 01:45 — console.log 12개 제거 (console.error/warn은 유지)
 'use strict';
 
 // ── 동기화 로그 기록 헬퍼 (fire-and-forget) ──
@@ -182,7 +182,6 @@ function gasRequest(params, timeoutMs = 15000) {
       .map(([k,v]) => k + '=' + encodeURIComponent(typeof v === 'object' ? JSON.stringify(v) : v))
       .join('&');
     script.src = gasUrl + (gasUrl.includes('?') ? '&' : '?') + qs + '&callback=' + cbName + '&t=' + Date.now();
-    console.log('[WisePay] gasRequest src=', script.src);
     script.onerror = (ev) => {
       clearTimeout(timeout);
       delete window[cbName];
@@ -491,7 +490,6 @@ function updateFreeeFileLabel() {
 
 // ── 급여 CSV → 구글 드라이브 임포트 (브라우저 업로드 방식) ──
 async function importFreeePayrollCSV() {
-  console.log('[WisePay] importFreeePayrollCSV called');
   const input    = document.getElementById('freeePayrollInput');
   const statusEl = document.getElementById('freeePayrollStatus');
   if (!gasUrl) { showToast(LANG==='JP'?'先にURLを設定してください':'먼저 URL을 설정해 주세요','w'); return; }
@@ -511,7 +509,6 @@ async function importFreeePayrollCSV() {
     const rows = _parseCSV(text);
     if (rows.length < 2) continue;
     const headers = rows[0];
-    console.log('[WisePay] importFreeePayrollCSV parsed file', file.name, 'rows=', rows.length, 'headers=', headers.join('|'));
     const fieldMap = buildPayrollFieldMap(headers);
     const findIndexFor = (field, guesses=[]) => {
       let idx = fieldMap.indexOf(field);
@@ -528,7 +525,6 @@ async function importFreeePayrollCSV() {
     const idxPeriod = findIndexFor('period', ['月分', '対象月', '給与対象月', '対象期間', '給与対象', '月分（回）']);
     const idxNo = findIndexFor('no', ['従業員番号', '社員番号', '社員コード', '社員ID']);
     const idxName = findIndexFor('name', ['従業員名', '社員名', '氏名', '名前', 'name']);
-    console.log('[WisePay] importFreeePayrollCSV indices', { idxPayDate, idxPeriod, idxNo, idxName });
     const gv = (r, n) => {
       const i = findIndexFor(n, [n]);
       if (i < 0 || i >= r.length) return 0;
@@ -556,21 +552,12 @@ async function importFreeePayrollCSV() {
       }
       const dateStr = (idxPayDate >= 0 ? (r[idxPayDate] || '') : '').toString().trim();
       const ym = resolvePayrollYearMonth(periodRaw, dateStr);
-      if (!ym) {
-        console.log('[WisePay] importFreeePayrollCSV skipped row', i+1, 'no period/year-month', { periodRaw, dateStr, row: r.slice(0, 10) });
-        continue;
-      }
+      if (!ym) continue;
       const year = ym.year;
       const month = ym.month;
-      if (!year || !month) {
-        console.log('[WisePay] importFreeePayrollCSV skipped row', i+1, 'invalid year/month', { year, month, periodRaw, dateStr, row: r.slice(0, 10) });
-        continue;
-      }
+      if (!year || !month) continue;
       const no = parseInt((idxNo >= 0 ? (r[idxNo] || '') : '').toString().trim());
-      if (!no) {
-        console.log('[WisePay] importFreeePayrollCSV skipped row', i+1, 'missing employee no', { idxNo, row: r.slice(0, 10) });
-        continue;
-      }
+      if (!no) continue;
 
       payrolls.push({
         no, name: (idxName >= 0 ? (r[idxName] || '') : '').toString().trim(), year, month,
@@ -601,20 +588,13 @@ async function importFreeePayrollCSV() {
     for (let i = 0; i < payrolls.length; i += batchSize) {
       batches.push(payrolls.slice(i, i + batchSize));
     }
-    console.log('[WisePay] importFreeePayrollCSV gasUrl=', gasUrl);
-    console.log('[WisePay] importFreeePayrollCSV: sending payload, items=', payrolls.length, 'batches=', batches.length);
-
     let totalSaved = 0;
     for (let bi = 0; bi < batches.length; bi++) {
       const batch = batches[bi];
-      console.log('[WisePay] importFreeePayrollCSV sending batch', bi + 1, '/', batches.length, 'count=', batch.length);
       const res = await gasRequest({ action: 'importPayrolls', payrolls: JSON.stringify(batch) }, timeoutMs);
       if (!res || !res.ok) throw new Error((res && res.error) ? res.error : '서버 응답 확인 실패');
       totalSaved += (res.count || 0);
-      console.log('[WisePay] importFreeePayrollCSV batch result', bi + 1, res);
     }
-
-    console.log('[WisePay] importFreeePayrollCSV server total count=', totalSaved, 'local count=', payrolls.length);
     // localStorage도 즉시 갱신
     payrolls.forEach(p => {
       const pNo = String(parseInt(p.no)).padStart(4, '0');
