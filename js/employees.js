@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-30 00:02 — 부양가족 이름 입력란에 라벨 추가
+﻿// 수정: 2026-05-30 00:27 — 데드코드 제거: validateDate()
 'use strict';
 
 let showResigned = false; // 퇴사자 포함 토글 상태
@@ -635,8 +635,6 @@ function validateDateText(input, errId, required) {
   errEl.textContent=''; input.classList.remove('error'); return true;
 }
 
-// 구 validateDate 호환 (type=date 쓰는 곳 없음, 안전망)
-function validateDate(input, errId) { return validateDateText(input, errId); }
 
 function isValidDate(dateStr) {
   if(!dateStr) return true;
