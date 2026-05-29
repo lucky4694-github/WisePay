@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-29 23:49 — 사원번호 1컬럼 단독 행 배치 (빈 셀로 줄바꿈)
+﻿// 수정: 2026-05-29 23:55 — 퇴사일 flex 래퍼 조건부 렌더링으로 입력 폭 수정
 'use strict';
 
 let showResigned = false; // 퇴사자 포함 토글 상태
@@ -253,13 +253,17 @@ function renderEmpFormFields(emp, readOnly = false) {
           <span class="form-error" id="f-leave-err"></span>
         </div>
       </div>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <input class="form-input" id="f-leave" type="text" value="${normalizeDate(v('leave'))}"
+      ${readOnly
+        ? `<div style="display:flex;gap:6px;align-items:center;">
+          <input class="form-input" id="f-leave" type="text" value="${normalizeDate(v('leave'))}"
+            placeholder="YYYY-MM-DD" autocomplete="off" disabled>
+          <button class="btn btn-success btn-sm" style="white-space:nowrap;" onclick="reinstateEmp(${editingEmpIdx})">${jp?'在職に戻す':'재직 복귀'}</button>
+        </div>`
+        : `<input class="form-input" id="f-leave" type="text" value="${normalizeDate(v('leave'))}"
           placeholder="YYYY-MM-DD" autocomplete="off"
           onfocus="onDateFocus(this)" onblur="onDateBlur(this,'f-leave-err')"
-          onkeydown="onDateKeydown(event,'f-birth','f-leave-err')" oninput="onDateInput(this)"${dis}>
-        ${readOnly ? `<button class="btn btn-success btn-sm" style="white-space:nowrap;" onclick="reinstateEmp(${editingEmpIdx})">${jp?'在職に戻す':'재직 복귀'}</button>` : ''}
-      </div>
+          onkeydown="onDateKeydown(event,'f-birth','f-leave-err')" oninput="onDateInput(this)">`
+      }
     </div>
     <div class="form-group">
       <div class="form-label-block">
