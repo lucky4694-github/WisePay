@@ -1,4 +1,4 @@
-// 수정: 2026-05-28 12:45 — 년도 선택↔사원 선택 위치 교환, 연도 드롭다운 실제 데이터 기반 동적 생성
+// 수정: 2026-05-29 23:56 — 지급 이력 사원 간 구분 헤더 행 추가
 'use strict';
 function getAvailableAnnualYears() {
   const years = new Set();
@@ -377,7 +377,16 @@ function renderHistory() {
     }
   });
   if(!rows.length){ tbody.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:25px;color:var(--text3);">${LANG==='JP'?'データがありません':'데이터 없음'}</td></tr>`; return; }
+  let prevEmpNo = null;
   rows.forEach(({m,emp,d})=>{
+    // 사원이 바뀌면 구분 헤더 행 삽입
+    if(emp.no !== prevEmpNo) {
+      const headerTr = document.createElement('tr');
+      headerTr.className = 'hist-emp-header';
+      headerTr.innerHTML = `<td colspan="8"><span class="hist-emp-label">${emp.name}</span><span class="hist-emp-label-no">${String(emp.no).padStart(4,'0')}</span></td>`;
+      tbody.appendChild(headerTr);
+      prevEmpNo = emp.no;
+    }
     const base=safeInt(d['r-base']),ot=safeInt(d['r-ot']),kintai=safeInt(d['r-kintai']),commute=safeInt(d['r-commute']),commutetax=safeInt(d['r-commutetax']),kinmu=safeInt(d['r-kinmu']),shokumu=safeInt(d['r-shokumu']),field=safeInt(d['r-field']);
     const totalPay=base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
     const hyo_override=safeInt(d['r-hyo']);

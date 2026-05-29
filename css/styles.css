@@ -209,6 +209,11 @@ body{font-family:'Noto Sans JP','Noto Sans KR',sans-serif;background:var(--bg);c
 .history-table td{padding:8px 11px;border-bottom:1px solid var(--border2);text-align:right;}
 .history-table td:first-child,.history-table td:nth-child(2){text-align:left;}
 .history-table tr:hover td{background:var(--accent2);cursor:pointer;}
+.hist-emp-header td{background:var(--surface2);border-top:2px solid var(--border);border-bottom:1px solid var(--border);padding:5px 11px;cursor:default !important;}
+.hist-emp-header:first-child td{border-top:none;}
+.hist-emp-header:hover td{background:var(--surface2) !important;}
+.hist-emp-label{font-weight:600;font-size:calc(12px + var(--fs-delta));color:var(--text2);}
+.hist-emp-label-no{color:var(--text3);font-size:calc(11px + var(--fs-delta));margin-left:6px;}
 
 /* RATES PAGE */
 .rates-form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:14px 13px;}
