@@ -218,7 +218,13 @@ function closeAccessDenied() {
 }
 
 function renderNavForRole() {
-  if (!currentUser || currentUser.role === 'admin') return;
+  if (!currentUser) return;
+  if (currentUser.role === 'admin') {
+    // admin 전용 요소 표시
+    const resyncWrap = document.getElementById('resync-payroll-wrap');
+    if (resyncWrap) resyncWrap.style.display = '';
+    return;
+  }
   // viewer: 접근 불가 메뉴 숨김
   document.querySelectorAll('.nav-item[data-page]').forEach(item => {
     if (!VIEWER_PAGES.has(item.dataset.page)) item.style.display = 'none';

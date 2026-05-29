@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-29 22:37 — deleted_emp_ids 시트 추가, 퇴사 처리 및 재직 복귀 핸들러 구현
+// 수정: 2026-05-30 01:00 — saveSheet: _uid/_token 저장 제거, payroll 핸들러 필드 정리
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -105,7 +105,7 @@ function doPost(e) {
     }
     if (data.type === 'payroll') {
       if (!verifyWriteToken(data)) return jsonResponse({ ok: false, error: 'Unauthorized' });
-      const { type: _t, ...payrollData } = data;
+      const { type: _t, _uid: _u, _token: _tok, ...payrollData } = data;
       const existing = sheetToObjects(getSheet(SHEET_PAY));
       const payMap = {};
       existing.forEach(function(p) {
@@ -245,8 +245,14 @@ function saveSheet(name, records) {
   if (!records || !records.length) return;
   const sheet = getSheet(name);
   sheet.clearContents();
-  const headers = [...new Set(records.flatMap(r => Object.keys(r)))];
-  const rows = [headers, ...records.map(r => headers.map(function(h) {
+  // 인증 필드(_uid, _token)는 시트에 저장하지 않음
+  const cleaned = records.map(function(r) {
+    const c = {};
+    Object.keys(r).forEach(function(k) { if (k !== '_uid' && k !== '_token') c[k] = r[k]; });
+    return c;
+  });
+  const headers = [...new Set(cleaned.flatMap(r => Object.keys(r)))];
+  const rows = [headers, ...cleaned.map(r => headers.map(function(h) {
     const v = r[h] !== undefined ? r[h] : '';
     return (Array.isArray(v) || (v !== null && typeof v === 'object' && !(v instanceof Date)))
       ? JSON.stringify(v) : v;
