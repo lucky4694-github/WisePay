@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-28 17:23 — viewer 쓰기 차단: initApp 끝에 applyViewerRestrictions 호출
+﻿// 수정: 2026-05-30 01:05 — calcAgeByYear 적용, rerenderAll 추가, resetLocalData 리팩터
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -7,7 +7,7 @@ function syncFuyouFromFamilies() {
   employees.forEach(emp => {
     const cnt = Math.min((emp.families||[]).filter(f=>{
       if(!f.birth) return false;
-      return (currentYear - parseInt(f.birth.substring(0,4))) >= 16;
+      return calcAgeByYear(f.birth) >= 16;
     }).length, 7);
     if((emp.fuyouCount||0) !== cnt) { emp.fuyouCount = cnt; changed = true; }
   });
@@ -269,6 +269,12 @@ function resetLocalData() {
   currentEmpIdx = -1;
 
   saveRateHistory();
+  rerenderAll();
+  showToast(jp ? 'ローカルデータを初期化しました' : '로컬 데이터를 초기화했습니다', 's');
+}
+
+// 전체 화면 갱신 — 언어 전환·데이터 초기화 등 전역 상태 변경 후 호출
+function rerenderAll() {
   renderEmpSelect();
   renderEmpList();
   renderMonthTabs();
@@ -277,8 +283,10 @@ function resetLocalData() {
   updateRatesDisplay();
   renderRatesPage();
   checkRateBanner();
-
-  showToast(jp ? 'ローカルデータを初期化しました' : '로컬 데이터를 초기화했습니다', 's');
+  try { buildHistEmpSel(); renderHistory(); } catch(e) {}
+  try { buildAnnualYearSel(); buildAnnualEmpSel(); renderAnnual(); } catch(e) {}
+  updateGasStatus();
+  recalc();
 }
 
 // 구버전 급여 localStorage 키 마이그레이션

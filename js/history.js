@@ -1,4 +1,4 @@
-// 수정: 2026-05-29 23:56 — 지급 이력 사원 간 구분 헤더 행 추가
+// 수정: 2026-05-30 01:05 — renderHistory: calcPayrollBreakdown 공통 함수 적용
 'use strict';
 function getAvailableAnnualYears() {
   const years = new Set();
@@ -388,26 +388,8 @@ function renderHistory() {
       prevEmpNo = emp.no;
     }
     const base=safeInt(d['r-base']),ot=safeInt(d['r-ot']),kintai=safeInt(d['r-kintai']),commute=safeInt(d['r-commute']),commutetax=safeInt(d['r-commutetax']),kinmu=safeInt(d['r-kinmu']),shokumu=safeInt(d['r-shokumu']),field=safeInt(d['r-field']);
-    const totalPay=base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
-    const hyo_override=safeInt(d['r-hyo']);
-    const hyo=hyo_override>0?hyo_override:getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field);
-    const r=getRatesForYM(year,m);
-    const shahoParts=emp.shaho_start?emp.shaho_start.split('-'):null;
-    const shahoFrom=shahoParts?parseInt(shahoParts[0])*100+parseInt(shahoParts[1]):0;
-    const shahoExempt=shahoFrom>0&&(year*100+m)<shahoFrom;
-    const kenko=shahoExempt?0:Math.floor(hyo*r.kenko/100/2);
-    const kaigo2=shahoExempt?0:(isKaigo(emp)?Math.floor(hyo*r.kaigo/100/2):0);
-    const kodomo=shahoExempt?0:Math.floor(hyo*r.kodomo/100/2);
-    const nenkin=shahoExempt?0:Math.floor(hyo*r.nenkin/100/2);
-    const koyoEnabled=!shahoExempt&&emp.koyo!=='no';
-    const koyo=koyoEnabled?Math.round(totalPay*r.koyo/100):0;
-    const shakai=kenko+kaigo2+kodomo+nenkin+koyo;
-    const fuyou=parseInt(emp.fuyouCount)||0;
-    const isOtsu=(emp.shotokuKbn||'ko')==='otsu';
-    const shotoku=Math.max(0,calcShotoku(totalPay-commute-shakai,fuyou,isOtsu,year,m));
-    const jumin=safeInt(d['k-jumin']),nencho=safeInt(d['k-nencho']);
-    const totalKojo=shakai+shotoku+jumin+nencho;
-    const net=totalPay-totalKojo;
+    const jumin=safeInt(d['k-jumin']),nencho=safeInt(d['k-nencho']),hyo_override=safeInt(d['r-hyo']);
+    const {totalPay,kenko,kaigo,nenkin,shotoku,totalKojo,net}=calcPayrollBreakdown(emp,{base,ot,kintai,commute,commutetax,kinmu,shokumu,field,hyo_override,jumin,nencho},year,m);
     const mu=LANG==='JP'?'月':'월';
     const tr=document.createElement('tr');
     tr.onclick=()=>{ currentEmpIdx=employees.indexOf(emp); currentMonth=m; gotoPage('payroll',document.querySelector('.nav-item')); document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active')); document.querySelector('.nav-item').classList.add('active'); renderMonthTabs(); loadPayrollForm(); };

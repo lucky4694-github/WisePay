@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-29 23:19 — 데이터 동기화 관련 번역 항목 제거
+﻿// 수정: 2026-05-30 01:05 — toggleLang: rerenderAll() 적용
 'use strict';
 function setTxt(id, jp, kr) {
   const el = document.getElementById(id);
@@ -14,16 +14,7 @@ function toggleLang() {
   localStorage.setItem(LS.lang, LANG);
   applyLang();
 
-  renderMonthTabs();
-  renderEmpSelect();
-  renderEmpList();
-  renderRatesPage();
-  updateRatesDisplay();
-  renderAnnual();
-  renderHistory();
-  buildHistEmpSel();
-  updateGasStatus();
-  recalc();
+  rerenderAll();
 
   // 사원 폼이 열려있으면 언어 반영하여 재렌더링 (f-no 입력란 존재 여부로 판단)
   if (document.getElementById('f-no')) {

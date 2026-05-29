@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-30 00:27 — 데드코드 제거: validateDate()
+﻿// 수정: 2026-05-30 01:05 — calcAgeByYear 적용, rerenderAll 적용
 'use strict';
 
 let showResigned = false; // 퇴사자 포함 토글 상태
@@ -110,8 +110,7 @@ function countFamilies(emp) {
   if(!emp.families) return 0;
   return emp.families.filter(f=>{
     if(!f.birth) return false;
-    const age = currentYear - parseInt(f.birth.substring(0,4));
-    return age >= 16;
+    return calcAgeByYear(f.birth) >= 16;
   }).length;
 }
 
@@ -811,8 +810,7 @@ function renderFamTable() {
   const jp=LANG==='JP';
   const ro = editingEmpIdx !== -1 && employees[editingEmpIdx] && isResigned(employees[editingEmpIdx]);
   tempFamilies.forEach((f,i)=>{
-    const age = currentYear - parseInt(f.birth.substring(0,4));
-    const isTarget = age >= 16;
+    const isTarget = calcAgeByYear(f.birth) >= 16;
     const tr=document.createElement('tr');
     tr.innerHTML=`<td>${f.name}</td><td>${normalizeDate(f.birth)}</td><td><span class="fam-badge ${isTarget?'badge-ok':'badge-no'}">${isTarget?(jp?'対象':'대상'):(jp?'16歳未満':'16세 미만')}</span></td>${ro?'':'<td><button class="btn btn-sm" onclick="removeFam('+i+')" style="color:var(--red);padding:3px 7px;">'+(jp?'削除':'삭제')+'</button></td>'}`;
     tbody.appendChild(tr);
@@ -822,7 +820,7 @@ function renderFamTable() {
 function updateFamCount() {
   const el=document.getElementById('famCountBadge');
   if(!el) return;
-  const cnt = tempFamilies.filter(f=>{ if(!f.birth) return false; return (currentYear-parseInt(f.birth.substring(0,4)))>=16; }).length;
+  const cnt = tempFamilies.filter(f=>{ if(!f.birth) return false; return calcAgeByYear(f.birth) >= 16; }).length;
   el.textContent = cnt+(LANG==='JP'?'名':'명');
   const fuyouEl = document.getElementById('f-fuyou');
   if(fuyouEl) fuyouEl.value = String(Math.min(cnt, 7));

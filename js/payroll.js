@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-30 00:18 — 버그수정: updateEmpHeader() emp null 체크 추가
+﻿// 수정: 2026-05-30 01:05 — calcAgeByYear/calcPayrollBreakdown 추출, recalc·isKaigo 리팩터
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -315,17 +315,47 @@ function onPayrollBlur(input) {}
 function toHalfSpace(str) {
   return str.replace(/\u3000/g, ' ');
 }
+// ── 나이 계산 유틸 (연도 기반) ──────────────────────────
+function calcAgeByYear(birthStr) {
+  if (!birthStr) return 0;
+  return currentYear - parseInt(birthStr.substring(0, 4));
+}
+
+// ── 공제 계산 공통 함수 ─────────────────────────────────
+// history.js의 renderHistory, payroll.js의 recalc 양쪽에서 공유
+function calcPayrollBreakdown(emp, data, year, month) {
+  const {base,ot,kintai,commute,commutetax,kinmu,shokumu,field,hyo_override,jumin,nencho} = data;
+  const totalPay = base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
+  const hyo = hyo_override > 0 ? hyo_override : (emp ? getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field) : 58000);
+  const r = getRatesForYM(year, month);
+  const shahoParts = emp && emp.shaho_start ? emp.shaho_start.split('-') : null;
+  const shahoFrom  = shahoParts ? parseInt(shahoParts[0])*100+parseInt(shahoParts[1]) : 0;
+  const shahoExempt = shahoFrom > 0 && (year*100+month) < shahoFrom;
+  const kenko  = shahoExempt ? 0 : Math.floor(hyo*r.kenko/100/2);
+  const kaigo  = shahoExempt ? 0 : (emp&&isKaigo(emp) ? Math.floor(hyo*r.kaigo/100/2) : 0);
+  const kodomo = shahoExempt ? 0 : Math.floor(hyo*r.kodomo/100/2);
+  const nenkin = shahoExempt ? 0 : Math.floor(hyo*r.nenkin/100/2);
+  const koyoEnabled = !shahoExempt && (!emp || emp.koyo !== 'no');
+  const koyo  = koyoEnabled ? Math.round(totalPay*r.koyo/100) : 0;
+  const shakai = kenko+kaigo+kodomo+nenkin+koyo;
+  const fuyou  = emp ? (parseInt(emp.fuyouCount)||0) : 0;
+  const isOtsu = emp ? (emp.shotokuKbn||'ko')==='otsu' : false;
+  const shotoku = Math.max(0, calcShotoku(totalPay-commute-shakai, fuyou, isOtsu, year, month));
+  const totalKojo = shakai+shotoku+(jumin||0)+(nencho||0);
+  const net = totalPay-totalKojo;
+  return {totalPay,hyo,kenko,kaigo,kodomo,nenkin,koyo,koyoEnabled,shakai,fuyou,isOtsu,shotoku,totalKojo,net,r};
+}
+
 function isKaigo(emp) {
   if(emp.kaigo==='yes') return true;
   if(emp.kaigo==='no') return false;
   if(!emp.birth) return false;
-  return (currentYear - parseInt(emp.birth.substring(0,4))) >= 40;
+  return calcAgeByYear(emp.birth) >= 40;
 }
 function recalc() {
   const emp = employees[currentEmpIdx];
   const base=pv('r-base'),ot=pv('r-ot'),kintai=pv('r-kintai'),commute=pv('r-commute'),commutetax=pv('r-commutetax'),kinmu=pv('r-kinmu'),shokumu=pv('r-shokumu'),field=pv('r-field'),jumin=pv('k-jumin'),nencho=pv('k-nencho');
   const totalPay = base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
-  // 標準報酬月額：r-hyoが0より大きければ手動値を優先（随時改定・資格取得時の実際の等級）
   const hyo_override = pv('r-hyo');
 
   // 모든 입력이 0이면 공제 계산 없이 전부 0 표시 (빈 폼 상태)
@@ -342,36 +372,17 @@ function recalc() {
     window._calc={kenko:0,nenkin:0,shotoku:0,totalPay:0,totalKojo:0,net:0};
     return;
   }
-  const hyo = hyo_override > 0 ? hyo_override : (emp ? getHyo(base-kintai+commute+commutetax+kinmu+shokumu+field) : 58000);
-  // 사회보험 가입 전월 면제: shaho_start(YYYY-MM) 이전 월은 전 사회보험 0, 소득세만 적용
-  const shahoParts = emp && emp.shaho_start ? emp.shaho_start.split('-') : null;
-  const shahoFrom = shahoParts ? parseInt(shahoParts[0])*100 + parseInt(shahoParts[1]) : 0;
-  const shahoExempt = shahoFrom > 0 && (currentYear*100 + currentMonth) < shahoFrom;
 
-  const kenko  = shahoExempt ? 0 : Math.floor(hyo*rates.kenko/100/2);
-  const kaigo  = shahoExempt ? 0 : (emp&&isKaigo(emp)?Math.floor(hyo*rates.kaigo/100/2):0);
-  const kodomo = shahoExempt ? 0 : Math.floor(hyo*rates.kodomo/100/2);
-  const nenkin = shahoExempt ? 0 : Math.floor(hyo*rates.nenkin/100/2);
-  // 고용보험: 사회보험 면제 기간이거나 미가입이면 0
-  const koyoEnabled = !shahoExempt && (!emp || emp.koyo !== 'no');
-  const koyo = koyoEnabled ? Math.round(totalPay*rates.koyo/100) : 0;
-  // 고용보험 입력란 비활성화 처리
+  const c = calcPayrollBreakdown(emp, {base,ot,kintai,commute,commutetax,kinmu,shokumu,field,hyo_override,jumin,nencho}, currentYear, currentMonth);
+  const {hyo,kenko,kaigo,kodomo,nenkin,koyo,koyoEnabled,shakai,fuyou,isOtsu,shotoku,totalKojo,net,r} = c;
+  const shotokuBase = totalPay - commute - shakai;
+  const shotokuKbn  = isOtsu ? 'otsu' : 'ko';
+
   const koyoEl = document.getElementById('k-koyo');
   if(koyoEl) {
     koyoEl.style.color = koyoEnabled ? '' : 'var(--text3)';
     koyoEl.style.textDecoration = koyoEnabled ? '' : 'line-through';
   }
-
-  const shakai=kenko+kaigo+kodomo+nenkin+koyo;
-  // 소득세 과세기준: 총지급 - 비과세통근수당 - 사회보험합계
-  const shotokuBase = totalPay - commute - shakai;
-  const fuyou = emp ? (parseInt(emp.fuyouCount)||0) : 0;
-  const shotokuKbn = emp ? (emp.shotokuKbn||'ko') : 'ko';
-  const isOtsu = shotokuKbn === 'otsu';
-  const shotoku = Math.max(0, calcShotoku(shotokuBase, fuyou, isOtsu, currentYear, currentMonth));
-
-  const totalKojo=shakai+shotoku+jumin+nencho;
-  const net=totalPay-totalKojo;
   const fmt=n=>n.toLocaleString();
   document.getElementById('shikyuuTotal').textContent=fmt(totalPay);
   document.getElementById('totalPayTxt').textContent='¥'+fmt(totalPay);
@@ -387,9 +398,9 @@ function recalc() {
   document.getElementById('netAmountTxt').textContent='¥'+fmt(net);
   if(emp) {
     const fuyouTxt = fuyou > 0 ? `、${LANG==='JP'?'扶養':'부양'}${fuyou}${LANG==='JP'?'人':'명'}(-${fmt(fuyou*1610)}円)` : '';
-    document.getElementById('ci-kenko').textContent=`標準報酬月額：${fmt(hyo)}円、労働者：${(rates.kenko/2).toFixed(4)}%`;
-    document.getElementById('ci-nenkin').textContent=`標準報酬月額：${fmt(hyo)}円、労働者：${(rates.nenkin/2).toFixed(2)}%`;
-    document.getElementById('ci-koyo').textContent=koyoEnabled?`労働者：${rates.koyo.toFixed(2)}%、賃金総額：${fmt(totalPay)}円`:(LANG==='JP'?'未加入':'미가입');
+    document.getElementById('ci-kenko').textContent=`標準報酬月額：${fmt(hyo)}円、労働者：${(r.kenko/2).toFixed(4)}%`;
+    document.getElementById('ci-nenkin').textContent=`標準報酬月額：${fmt(hyo)}円、労働者：${(r.nenkin/2).toFixed(2)}%`;
+    document.getElementById('ci-koyo').textContent=koyoEnabled?`労働者：${r.koyo.toFixed(2)}%、賃金総額：${fmt(totalPay)}円`:(LANG==='JP'?'未加入':'미가입');
     document.getElementById('ci-shotoku').textContent=`${shotokuKbn==='otsu'?(LANG==='JP'?'乙欄':'을란'):(LANG==='JP'?'甲欄':'갑란')}、課税対象：${fmt(shotokuBase)}円${fuyouTxt}`;
   }
   // diff (1월이면 전년 12월과 비교)
