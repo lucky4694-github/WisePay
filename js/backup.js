@@ -1,4 +1,4 @@
-// 수정: 2026-05-27 22:45 — 폴더 보기 버튼 제거
+// 수정: 2026-05-30 00:18 — 버그수정: renderRates() → renderRatesPage()
 'use strict';
 
 /* ── 날짜 유틸 ── */
@@ -480,7 +480,7 @@ function _confirmRestorePay() {
   _restorePayData = null;
 
   showToast(jp ? '給与データを復元しました ✓' : '급여 데이터 복원 완료 ✓', 's');
-  try { renderRates(); } catch(e) {}
+  try { renderRatesPage(); } catch(e) {}
   const activePage = document.querySelector('.page.active')?.id || '';
   if (activePage === 'page-annual') try { renderAnnual(); } catch(e) {}
   if (activePage === 'page-history') try { renderHistory(); } catch(e) {}

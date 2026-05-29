@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-28 17:23 — viewer 쓰기 차단: saveCurrent/deleteCurrentMonth 권한 체크 추가
+﻿// 수정: 2026-05-30 00:18 — 버그수정: updateEmpHeader() emp null 체크 추가
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -251,6 +251,7 @@ function loadPayrollForm() {
 function updateEmpHeader() {
   if(!employees.length) return;
   const emp = employees[currentEmpIdx];
+  if(!emp) return;
   document.getElementById('avatarTxt').textContent = emp.name.charAt(0);
   document.getElementById('empNameTxt').textContent = emp.name;
   document.getElementById('empIdTxt').textContent = String(emp.no).padStart(4,'0');
