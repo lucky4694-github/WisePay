@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-30 23:10 — zero 조기 반환 가드를 calcPayrollBreakdown 안으로 이동, calcPayrollData 중복 제거
+// 수정: 2026-05-30 23:20 — 2단계: recalc()가 calcPayrollData()를 사용하도록 리팩토링
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -313,7 +313,7 @@ function onPayrollBlur(input) {}
 
 // 반각 스페이스로 변환 (일본어 입력 시 전각 스페이스 → 반각)
 function toHalfSpace(str) {
-  return str.replace(/\u3000/g, ' ');
+  return str.replace(/　/g, ' ');
 }
 // ── 나이 계산 유틸 ──────────────────────────────────────
 // 연도 기반 (부양가족 16세 판정 등 연도 단위 기준에 사용)
@@ -411,69 +411,77 @@ function calcPayrollData(input, emp, year, month) {
 
 function recalc() {
   const emp = employees[currentEmpIdx];
-  const base=pv('r-base'),ot=pv('r-ot'),kintai=pv('r-kintai'),commute=pv('r-commute'),commutetax=pv('r-commutetax'),kinmu=pv('r-kinmu'),shokumu=pv('r-shokumu'),field=pv('r-field'),jumin=pv('k-jumin'),nencho=pv('k-nencho');
-  const totalPay = base+ot-kintai+commute+commutetax+kinmu+shokumu+field;
-  const hyo_override = pv('r-hyo');
+  const input = {
+    'r-base':pv('r-base'), 'r-ot':pv('r-ot'), 'r-kintai':pv('r-kintai'),
+    'r-commute':pv('r-commute'), 'r-commutetax':pv('r-commutetax'),
+    'r-kinmu':pv('r-kinmu'), 'r-shokumu':pv('r-shokumu'), 'r-field':pv('r-field'),
+    'r-hyo':pv('r-hyo'), 'k-jumin':pv('k-jumin'), 'k-nencho':pv('k-nencho'),
+  };
+  const c = calcPayrollData(input, emp, currentYear, currentMonth);
+  const {totalPay,hyo,kenko,kaigo,kodomo,nenkin,koyo,shotoku,totalKojo,net,
+         koyoEnabled,shakai,fuyou,isOtsu,r} = c;
+  // 빈 폼 판정: 입력 전체 0
+  const isEmpty = totalPay === 0 && !c['r-hyo'] && !c['k-jumin'] && !c['k-nencho'];
+  const fmt = n => n.toLocaleString();
 
-  // 모든 입력이 0이면 공제 계산 없이 전부 0 표시 (빈 폼 상태)
-  if(totalPay === 0 && hyo_override === 0 && jumin === 0 && nencho === 0) {
-    ['shikyuuTotal','k-kenko','k-kaigo','k-kodomo','k-nenkin','k-koyo','k-shotoku','kojoTotal'].forEach(id=>{
-      const el=document.getElementById(id); if(el) el.textContent='0';
-    });
-    const kagEl=document.getElementById('k-kaigo'); if(kagEl) kagEl.className='row-val zero';
-    const koyoEl=document.getElementById('k-koyo'); if(koyoEl){ koyoEl.style.color=''; koyoEl.style.textDecoration=''; }
-    ['totalPayTxt','totalKojoTxt'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent='¥0'; });
-    const netEl=document.getElementById('netAmountTxt'); if(netEl) netEl.textContent='¥0';
-    ['ci-kenko','ci-nenkin','ci-koyo','ci-shotoku'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent='-'; });
-    const de=document.getElementById('netDiffTxt'); if(de){ de.textContent=' '; de.className='net-diff'; }
-    window._calc={hyo:0,kenko:0,kaigo:0,kodomo:0,nenkin:0,koyo:0,shotoku:0,totalPay:0,totalKojo:0,net:0};
-    return;
-  }
-
-  const c = calcPayrollBreakdown(emp, {base,ot,kintai,commute,commutetax,kinmu,shokumu,field,hyo_override,jumin,nencho}, currentYear, currentMonth);
-  const {hyo,kenko,kaigo,kodomo,nenkin,koyo,koyoEnabled,shakai,fuyou,isOtsu,shotoku,totalKojo,net,r} = c;
-  const shotokuBase = totalPay - commute - shakai;
-  const shotokuKbn  = isOtsu ? 'otsu' : 'ko';
+  // ── 금액 표시
+  document.getElementById('shikyuuTotal').textContent = fmt(totalPay);
+  document.getElementById('totalPayTxt').textContent = '¥' + fmt(totalPay);
+  document.getElementById('k-kenko').textContent = fmt(kenko);
+  document.getElementById('k-kaigo').textContent = fmt(kaigo);
+  document.getElementById('k-kaigo').className = 'row-val' + (kaigo === 0 ? ' zero' : ' hi');
+  document.getElementById('k-kodomo').textContent = fmt(kodomo);
+  document.getElementById('k-nenkin').textContent = fmt(nenkin);
+  document.getElementById('k-koyo').textContent = fmt(koyo);
+  document.getElementById('k-shotoku').textContent = fmt(shotoku);
+  document.getElementById('kojoTotal').textContent = fmt(totalKojo);
+  document.getElementById('totalKojoTxt').textContent = '¥' + fmt(totalKojo);
+  document.getElementById('netAmountTxt').textContent = '¥' + fmt(net);
 
   const koyoEl = document.getElementById('k-koyo');
-  if(koyoEl) {
-    koyoEl.style.color = koyoEnabled ? '' : 'var(--text3)';
-    koyoEl.style.textDecoration = koyoEnabled ? '' : 'line-through';
+  const de = document.getElementById('netDiffTxt');
+
+  if (isEmpty) {
+    // 빈 폼: 고용보험 스타일 초기화, 계산 정보·전월 대비 공백
+    if(koyoEl) { koyoEl.style.color = ''; koyoEl.style.textDecoration = ''; }
+    ['ci-kenko','ci-nenkin','ci-koyo','ci-shotoku'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.textContent = '-';
+    });
+    if(de) { de.textContent = ' '; de.className = 'net-diff'; }
+  } else {
+    // ── 고용보험 취소선 (미가입 시)
+    if(koyoEl) {
+      koyoEl.style.color = koyoEnabled ? '' : 'var(--text3)';
+      koyoEl.style.textDecoration = koyoEnabled ? '' : 'line-through';
+    }
+    // ── 급여 계산 정보
+    if(emp) {
+      const shotokuBase = totalPay - c['r-commute'] - shakai;
+      const shotokuKbn = isOtsu ? 'otsu' : 'ko';
+      const fuyouTxt = fuyou > 0 ? `、${LANG==='JP'?'扶養':'부양'}${fuyou}${LANG==='JP'?'人':'명'}(-${fmt(fuyou*1610)}円)` : '';
+      document.getElementById('ci-kenko').textContent = `標準報酬月額：${fmt(hyo)}円、労働者：${(r.kenko/2).toFixed(4)}%`;
+      document.getElementById('ci-nenkin').textContent = `標準報酬月額：${fmt(hyo)}円、労働者：${(r.nenkin/2).toFixed(2)}%`;
+      document.getElementById('ci-koyo').textContent = koyoEnabled ? `労働者：${r.koyo.toFixed(2)}%、賃金総額：${fmt(totalPay)}円` : (LANG==='JP'?'未加入':'미가입');
+      document.getElementById('ci-shotoku').textContent = `${shotokuKbn==='otsu'?(LANG==='JP'?'乙欄':'을란'):(LANG==='JP'?'甲欄':'갑란')}、課税対象：${fmt(shotokuBase)}円${fuyouTxt}`;
+    }
+    // ── 전월 대비 (1월이면 전년 12월과 비교)
+    if(emp && de) {
+      const prevY = currentMonth===1 ? currentYear-1 : currentYear;
+      const prevM = currentMonth===1 ? 12 : currentMonth-1;
+      const pk = `kyuyo_p_${String(emp.no).padStart(4,'0')}_${prevY}_${prevM}`;
+      const ps = localStorage.getItem(pk);
+      if(ps) { try { const pd=JSON.parse(ps); const diff=net-(pd._net||0); const u=LANG==='JP'?'前月比':'전월 대비';
+        if(diff>0){de.textContent=u+'  ▲ +'+fmt(diff);de.className='net-diff up';}
+        else if(diff<0){de.textContent=u+'  ▼ '+fmt(diff);de.className='net-diff dn';}
+        else{de.textContent=u+'  ─ ±0';de.className='net-diff nc';}
+      } catch(e){ de.textContent=' '; de.className='net-diff'; } }
+      else { de.textContent = ' '; de.className = 'net-diff'; }
+    }
   }
-  const fmt=n=>n.toLocaleString();
-  document.getElementById('shikyuuTotal').textContent=fmt(totalPay);
-  document.getElementById('totalPayTxt').textContent='¥'+fmt(totalPay);
-  document.getElementById('k-kenko').textContent=fmt(kenko);
-  document.getElementById('k-kaigo').textContent=fmt(kaigo);
-  document.getElementById('k-kaigo').className='row-val'+(kaigo===0?' zero':' hi');
-  document.getElementById('k-kodomo').textContent=fmt(kodomo);
-  document.getElementById('k-nenkin').textContent=fmt(nenkin);
-  document.getElementById('k-koyo').textContent=fmt(koyo);
-  document.getElementById('k-shotoku').textContent=fmt(shotoku);
-  document.getElementById('kojoTotal').textContent=fmt(totalKojo);
-  document.getElementById('totalKojoTxt').textContent='¥'+fmt(totalKojo);
-  document.getElementById('netAmountTxt').textContent='¥'+fmt(net);
-  if(emp) {
-    const fuyouTxt = fuyou > 0 ? `、${LANG==='JP'?'扶養':'부양'}${fuyou}${LANG==='JP'?'人':'명'}(-${fmt(fuyou*1610)}円)` : '';
-    document.getElementById('ci-kenko').textContent=`標準報酬月額：${fmt(hyo)}円、労働者：${(r.kenko/2).toFixed(4)}%`;
-    document.getElementById('ci-nenkin').textContent=`標準報酬月額：${fmt(hyo)}円、労働者：${(r.nenkin/2).toFixed(2)}%`;
-    document.getElementById('ci-koyo').textContent=koyoEnabled?`労働者：${r.koyo.toFixed(2)}%、賃金総額：${fmt(totalPay)}円`:(LANG==='JP'?'未加入':'미가입');
-    document.getElementById('ci-shotoku').textContent=`${shotokuKbn==='otsu'?(LANG==='JP'?'乙欄':'을란'):(LANG==='JP'?'甲欄':'갑란')}、課税対象：${fmt(shotokuBase)}円${fuyouTxt}`;
-  }
-  // diff (1월이면 전년 12월과 비교)
-  if(emp) {
-    const prevY = currentMonth===1 ? currentYear-1 : currentYear;
-    const prevM = currentMonth===1 ? 12 : currentMonth-1;
-    const pk=`kyuyo_p_${String(emp.no).padStart(4,'0')}_${prevY}_${prevM}`;
-    const ps=localStorage.getItem(pk);
-    const de=document.getElementById('netDiffTxt');
-    if(ps) { try { const pd=JSON.parse(ps); const diff=net-(pd._net||0); const u=LANG==='JP'?'前月比':'전월 대비'; if(diff>0){de.textContent=u+'  ▲ +'+fmt(diff);de.className='net-diff up';}
-      else if(diff<0){de.textContent=u+'  ▼ '+fmt(diff);de.className='net-diff dn';}
-      else{de.textContent=u+'  ─ ±0';de.className='net-diff nc';}
-    } catch(e){ de.textContent=' '; de.className='net-diff'; } }
-    else { de.textContent=' '; de.className='net-diff'; }
-  }
-  window._calc = {hyo,kenko,kaigo,kodomo,nenkin,koyo,shotoku,totalPay,totalKojo,net};
+
+  // window._calc: 입력값 + 계산값 저장 (display-only 필드 koyoEnabled/shakai/fuyou/isOtsu/r 제외)
+  const { koyoEnabled:_ke, shakai:_sh, fuyou:_fu, isOtsu:_ot, r:_r, ...storeFields } = c;
+  window._calc = storeFields;
 }
 
 // ══ DELETE MONTH ══
@@ -541,4 +549,3 @@ function saveCurrent() {
     gasAppendLog(isNewPayroll ? '급여추가' : '급여수정', logTarget, '성공', '로컬만 저장');
   }
 }
-
