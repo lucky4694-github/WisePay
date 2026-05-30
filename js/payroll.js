@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-30 22:50 — saveCurrent 저장 전 recalc() 강제 호출 + window._calc에 hyo/kaigo/kodomo/koyo 추가
+﻿// 수정: 2026-05-30 23:00 — 1단계: calcPayrollData(input, emp, year, month) 순수 계산 함수 추출
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -364,6 +364,57 @@ function isKaigo(emp) {
   if(!emp.birth) return false;
   return calcAgeExact(emp.birth) >= 40;
 }
+
+// ── 순수 계산 함수 ─────────────────────────────────────────
+// DOM에 의존하지 않음. input 키는 필드 ID 그대로('r-base' 등).
+// recalc·saveCurrent·일괄 재저장 모두 이 함수를 공유한다.
+function calcPayrollData(input, emp, year, month) {
+  const parse = k => parseInt(String(input[k] || '0').replace(/,/g, '')) || 0;
+  const base       = parse('r-base');
+  const ot         = parse('r-ot');
+  const kintai     = parse('r-kintai');
+  const commute    = parse('r-commute');
+  const commutetax = parse('r-commutetax');
+  const kinmu      = parse('r-kinmu');
+  const shokumu    = parse('r-shokumu');
+  const field      = parse('r-field');
+  const hyo_override = parse('r-hyo');
+  const jumin      = parse('k-jumin');
+  const nencho     = parse('k-nencho');
+  const totalPay   = base + ot - kintai + commute + commutetax + kinmu + shokumu + field;
+
+  const inputVals = {
+    'r-base': base, 'r-ot': ot, 'r-kintai': kintai, 'r-commute': commute,
+    'r-commutetax': commutetax, 'r-kinmu': kinmu, 'r-shokumu': shokumu, 'r-field': field,
+    'r-hyo': hyo_override, 'k-jumin': jumin, 'k-nencho': nencho,
+  };
+
+  // 전체 0 → 공제 계산 스킵 (getHyo(0)이 최소 등급 반환해 오계산 방지)
+  if (totalPay === 0 && hyo_override === 0 && jumin === 0 && nencho === 0) {
+    return {
+      ...inputVals,
+      hyo: 0, kenko: 0, kaigo: 0, kodomo: 0, nenkin: 0, koyo: 0, shotoku: 0,
+      totalPay: 0, totalKojo: 0, net: 0,
+      koyoEnabled: false, shakai: 0, fuyou: 0, isOtsu: false,
+      r: getRatesForYM(year, month),
+    };
+  }
+
+  const c = calcPayrollBreakdown(
+    emp,
+    {base, ot, kintai, commute, commutetax, kinmu, shokumu, field, hyo_override, jumin, nencho},
+    year, month
+  );
+
+  return {
+    ...inputVals,
+    hyo: c.hyo, kenko: c.kenko, kaigo: c.kaigo, kodomo: c.kodomo,
+    nenkin: c.nenkin, koyo: c.koyo, shotoku: c.shotoku,
+    totalPay: c.totalPay, totalKojo: c.totalKojo, net: c.net,
+    koyoEnabled: c.koyoEnabled, shakai: c.shakai, fuyou: c.fuyou, isOtsu: c.isOtsu, r: c.r,
+  };
+}
+
 function recalc() {
   const emp = employees[currentEmpIdx];
   const base=pv('r-base'),ot=pv('r-ot'),kintai=pv('r-kintai'),commute=pv('r-commute'),commutetax=pv('r-commutetax'),kinmu=pv('r-kinmu'),shokumu=pv('r-shokumu'),field=pv('r-field'),jumin=pv('k-jumin'),nencho=pv('k-nencho');
