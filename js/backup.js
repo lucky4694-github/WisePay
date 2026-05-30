@@ -1,4 +1,4 @@
-// 수정: 2026-05-30 00:18 — 버그수정: renderRates() → renderRatesPage()
+// 수정: 2026-05-31 00:57 — 복원 모달 연도 선택 추가 + 삭제 범위 한정 + _uid/_token 제거
 'use strict';
 
 /* ── 날짜 유틸 ── */
@@ -404,6 +404,26 @@ function _openRestorePayModal(data) {
   const empAllCb = document.getElementById('restore-emp-all');
   if (empAllCb) empAllCb.checked = true;
 
+  // 연도 목록 (백업에 실제 존재하는 연도만 동적으로 생성)
+  const yearSet = new Set();
+  (data.payrolls || []).forEach(row => { if (row.year) yearSet.add(Number(row.year)); });
+  const yearList = document.getElementById('restore-year-list');
+  if (yearList) {
+    yearList.innerHTML = '';
+    [...yearSet].sort().forEach(y => {
+      const label = document.createElement('label');
+      label.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.className = 'restore-year-cb'; cb.value = y; cb.checked = true;
+      cb.addEventListener('change', () => _syncRestoreAllCb('restore-year-all', '.restore-year-cb'));
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(` ${y}년`));
+      yearList.appendChild(label);
+    });
+  }
+  const yearAllCb = document.getElementById('restore-year-all');
+  if (yearAllCb) yearAllCb.checked = true;
+
   document.querySelectorAll('.restore-month-cb').forEach(cb => { cb.checked = true; });
   const monthAllCb = document.getElementById('restore-month-all');
   if (monthAllCb) monthAllCb.checked = true;
@@ -413,6 +433,10 @@ function _openRestorePayModal(data) {
 
 function _toggleRestoreEmpAll(checked) {
   document.querySelectorAll('.restore-emp-cb').forEach(cb => { cb.checked = checked; });
+}
+
+function _toggleRestoreYearAll(checked) {
+  document.querySelectorAll('.restore-year-cb').forEach(cb => { cb.checked = checked; });
 }
 
 function _toggleRestoreMonthAll(checked) {
@@ -427,19 +451,21 @@ function _syncRestoreAllCb(allId, cbSelector) {
 
 function _confirmRestorePay() {
   const selectedEmps   = [...document.querySelectorAll('.restore-emp-cb:checked')].map(cb => cb.value);
+  const selectedYears  = [...document.querySelectorAll('.restore-year-cb:checked')].map(cb => Number(cb.value));
   const selectedMonths = [...document.querySelectorAll('.restore-month-cb:checked')].map(cb => Number(cb.value));
 
-  if (!selectedEmps.length || !selectedMonths.length) {
-    showToast('사원과 월을 하나 이상 선택해 주세요', 'w');
+  if (!selectedEmps.length || !selectedYears.length || !selectedMonths.length) {
+    showToast('사원, 연도, 월을 하나 이상 선택해 주세요', 'w');
     return;
   }
 
   const n = selectedEmps.length;
+  const y = selectedYears.length;
   const m = selectedMonths.length;
   const jp = LANG === 'JP';
   const msg = jp
-    ? `選択した${n}名 × ${m}ヶ月のデータを上書きします。現在のデータが上書きされます。続けますか？`
-    : `선택한 ${n}명 × ${m}개월 데이터를 덮어씁니다. 현재 데이터가 덮어써집니다. 계속하시겠습니까?`;
+    ? `選択した${n}名 × ${y}年 × ${m}ヶ月のデータを上書きします。続けますか？`
+    : `선택한 ${n}명 × ${y}개 연도 × ${m}개월 데이터를 덮어씁니다. 계속하시겠습니까?`;
   if (!confirm(msg)) return;
 
   closeModal('modal-restore-pay');
@@ -453,24 +479,25 @@ function _confirmRestorePay() {
 
   if (Array.isArray(data.payrolls)) {
     const empSet   = new Set(selectedEmps.map(String));
+    const yearSet  = new Set(selectedYears);
     const monthSet = new Set(selectedMonths);
 
-    // 백업에서 선택 범위만 추출
+    // 백업에서 선택 범위만 추출 (_uid/_token 제거)
     const backupMap = new Map();
     data.payrolls.forEach(row => {
-      const { no, name, year, month, ...d } = row;
+      const { no, name, year, month, _uid: _u, _token: _t, ...d } = row;
       if (no == null || !year || !month) return;
-      if (!empSet.has(String(no)) || !monthSet.has(Number(month))) return;
+      if (!empSet.has(String(no)) || !yearSet.has(Number(year)) || !monthSet.has(Number(month))) return;
       const pNo = String(no).padStart(4, '0');
       backupMap.set(`kyuyo_p_${pNo}_${year}_${month}`, d);
     });
 
-    // 선택 범위 기존 데이터 삭제
+    // 선택한 사원 × 연도 × 월에 해당하는 키만 삭제 (범위 밖 데이터 보존)
     selectedEmps.forEach(no => {
       const pNo = String(no).padStart(4, '0');
-      for (let y = 2024; y <= 2030; y++) {
-        selectedMonths.forEach(mon => localStorage.removeItem(`kyuyo_p_${pNo}_${y}_${mon}`));
-      }
+      selectedYears.forEach(yr => {
+        selectedMonths.forEach(mon => localStorage.removeItem(`kyuyo_p_${pNo}_${yr}_${mon}`));
+      });
     });
 
     // 백업 데이터 복원

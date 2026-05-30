@@ -1,4 +1,4 @@
-// 수정: 2026-05-30 23:43 — resyncAllPayrolls: calcPayrollData 적용으로 계산값 포함 재저장
+// 수정: 2026-05-31 00:57 — collectAllPayrolls: _uid/_token 백업 데이터에서 제거
 'use strict';
 
 // ── 동기화 로그 기록 헬퍼 (fire-and-forget) ──
@@ -44,14 +44,8 @@ function collectAllPayrolls() {
 
         if (saved) {
           try {
-            const d = JSON.parse(saved);
-            result.push({
-              no: emp.no,
-              name: emp.name,
-              year: y,
-              month: m,
-              ...d
-            });
+            const { _uid: _u, _token: _t, ...d } = JSON.parse(saved);
+            result.push({ no: emp.no, name: emp.name, year: y, month: m, ...d });
           } catch(e){}
         }
       }

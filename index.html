@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-31 00:28 — payroll.js: onPayrollBlur 빈 함수 제거 + index.html 호출부 8곳 제거
+  수정: 2026-05-31 00:57 — 복원 모달 연도 선택 UI 추가
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -603,6 +603,15 @@
           전체 선택/해제
         </label>
         <div id="restore-emp-list" style="max-height:140px;overflow-y:auto;padding-left:2px;"></div>
+      </div>
+      <!-- 연도 선택 (백업 파일의 실제 연도로 동적 생성) -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px;">연도 선택</div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 0;cursor:pointer;border-bottom:1px solid var(--border);margin-bottom:5px;">
+          <input type="checkbox" id="restore-year-all" onchange="_toggleRestoreYearAll(this.checked)">
+          전체 선택/해제
+        </label>
+        <div id="restore-year-list" style="display:flex;flex-wrap:wrap;gap:5px 14px;padding-left:2px;"></div>
       </div>
       <!-- 월 선택 -->
       <div>
