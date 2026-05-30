@@ -1,4 +1,4 @@
-// 수정: 2026-05-30 01:00 — resyncAllPayrolls 추가 (전체 급여 데이터 구글 시트 재저장)
+// 수정: 2026-05-30 23:43 — resyncAllPayrolls: calcPayrollData 적용으로 계산값 포함 재저장
 'use strict';
 
 // ── 동기화 로그 기록 헬퍼 (fire-and-forget) ──
@@ -92,7 +92,10 @@ async function resyncAllPayrolls() {
       const month = parseInt(parts[4], 10);
       if (!no || !year || !month) continue;
       const emp = employees.find(e => parseInt(e.no, 10) === no);
-      payrolls.push({ no, year, month, name: emp ? emp.name : '', ...d });
+      // calcPayrollData: 입력값 + 계산값 전체 산출 (DOM 비의존, 해당 달 요율 자동 적용)
+      const { koyoEnabled:_ke, shakai:_sh, fuyou:_fu, isOtsu:_ot, r:_r, ...calcResult } =
+        calcPayrollData(d, emp, year, month);
+      payrolls.push({ no, year, month, name: emp ? emp.name : '', ...calcResult });
     } catch(e) {}
   }
 
@@ -108,12 +111,12 @@ async function resyncAllPayrolls() {
   try {
     for (let i = 0; i < payrolls.length; i += BATCH) {
       const batch = payrolls.slice(i, i + BATCH);
-      sent = Math.min(i + BATCH, payrolls.length);
-      if (statusEl) statusEl.textContent = `${jp ? '저장 중...' : '저장 중...'} ${sent}/${payrolls.length}`;
       await fetch(gasUrl, {
         method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify({ type: 'importPayrolls', payrolls: batch, ...auth })
       });
+      sent += batch.length;
+      if (statusEl) statusEl.textContent = `저장 중... ${sent}/${payrolls.length}`;
       // 배치 사이 GAS 부하 방지
       if (i + BATCH < payrolls.length) await new Promise(r => setTimeout(r, 400));
     }
