@@ -1,4 +1,4 @@
-// 수정: 2026-05-30 23:20 — 2단계: recalc()가 calcPayrollData()를 사용하도록 리팩토링
+// 수정: 2026-05-30 23:43 — 3단계: saveCurrent() GAS 전송에 전 항목 포함 (pdata 중복 제거)
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -528,14 +528,8 @@ function saveCurrent() {
 
   const logTarget = `${emp.name} (${currentYear}/${String(currentMonth).padStart(2,'0')})`;
   if(gasUrl && window._calc) {
-    const c=window._calc;
-    // PFIELD 입력값도 함께 전송 → GAS 시트에 저장 → 다음 월 기본값 복원에 활용
-    const pdata={};
-    PFIELDS.forEach(f=>{
-      const el=document.getElementById(f);
-      pdata[f]=el?(parseInt((el.value||'0').replace(/,/g,''))||0):0;
-    });
-    fetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'payroll',year:currentYear,month:currentMonth,no:emp.no,name:emp.name,...pdata,...c,...(typeof gasWriteAuth==='function'?gasWriteAuth():{})}),mode:'no-cors'})
+    // window._calc: 입력값(PFIELD 11개) + 계산값(10개) 전체 포함 (recalc()가 보장)
+    fetch(gasUrl,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({type:'payroll',year:currentYear,month:currentMonth,no:emp.no,name:emp.name,...window._calc,...(typeof gasWriteAuth==='function'?gasWriteAuth():{})}),mode:'no-cors'})
       .then(()=>{
         showToast(LANG==='JP'?'Google スプレッドシートに保存しました ✓':'Google 스프레드시트에 저장됨 ✓','s');
         gasAppendLog(isNewPayroll ? '급여추가' : '급여수정', logTarget, '성공', '');

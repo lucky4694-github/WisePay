@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-30 01:00 — saveSheet: _uid/_token 저장 제거, payroll 핸들러 필드 정리
+// 수정: 2026-05-30 23:43 — saveSheet: 동적 헤더로 신규 컬럼(kaigo/kodomo/koyo/hyo) 자동 추가 확인
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
