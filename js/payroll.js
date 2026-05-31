@@ -1,4 +1,4 @@
-// 수정: 2026-05-31 16:19 — 수정 버튼 배경색 녹색(#16a34a)으로 변경
+// 수정: 2026-05-31 16:24 — 페이지 복귀 시 수정/저장 버튼 상태 오류 수정
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -318,11 +318,11 @@ function loadPayrollForm() {
   const _finalStatus = _isPaid ? 'paid' : _dataStatus;
   _payrollDataStatus = _finalStatus;
   _updatePayrollStatus(_finalStatus);
-  _applyPaidLock(_isPaid);
   updateEmpHeader();
   payrollDirty = false;
   const saveBtn = document.getElementById('btn-save');
   if(saveBtn) { saveBtn.style.background = ''; saveBtn.style.borderColor = ''; }
+  _applyPaidLock(_isPaid); // background 리셋 이후 호출해야 녹색이 덮이지 않음
   recalc();
 }
 

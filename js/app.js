@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-31 15:28 — 지급완료 기능 2단계: paidDetails 초기 로드 추가
+﻿// 수정: 2026-05-31 16:24 — gotoPage('payroll') 복귀 시 renderPaidBtn 호출 추가
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -236,7 +236,7 @@ function gotoPage(id, el) {
   const isPayroll = id === 'payroll';
   document.getElementById('btn-save').style.display = isPayroll ? '' : 'none';
   document.getElementById('btn-del-month').style.display = isPayroll ? '' : 'none';
-  if(id==='payroll') loadPayrollForm();
+  if(id==='payroll') { loadPayrollForm(); renderPaidBtn(); }
   if(id==='history') { try { buildHistEmpSel(); renderHistory(); } catch(e) { console.error('history render error:', e); } }
   if(id==='employees') renderEmpList();
   if(id==='rates') renderRatesPage();
