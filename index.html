@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
 <!--
-  수정: 2026-05-31 15:40 — 지급완료 3단계: 저장·삭제 시 지급완료 달 수정 보호 confirm 추가
+  수정: 2026-05-31 16:03 — 급여 명세 월 네비에 "이번 달" 버튼 추가
 -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -162,6 +162,9 @@
       <span class="year-txt" id="yearTxt">2026年</span>
       <button class="year-btn" onclick="changeYear(1)">▶</button>
     </div>
+    <div class="month-nav-sep"></div>
+    <button class="btn-today" id="btn-today" onclick="gotoToday()"><span id="t-today-btn">이번 달</span></button>
+    <div class="month-nav-sep"></div>
     <div class="month-tabs" id="monthTabs"></div>
   </div>
 

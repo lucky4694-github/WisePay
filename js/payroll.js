@@ -1,4 +1,4 @@
-// 수정: 2026-05-31 15:40 — 지급완료 기능 3단계: 저장·삭제 시 지급완료 달 수정 보호 confirm 추가
+// 수정: 2026-05-31 16:03 — 이번 달 버튼 gotoToday() 추가
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -65,6 +65,22 @@ function changeYear(d) {
     if(!confirm(msg)) return;
   }
   currentYear+=d; currentMonth = d < 0 ? 12 : 1; renderMonthTabs(); onMonthYearChange();
+}
+
+function gotoToday() {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = today.getMonth() + 1;
+  if (currentYear === y && currentMonth === m) return;
+  if (payrollDirty) {
+    const jp = LANG === 'JP';
+    const msg = jp ? '保存されていない給与データがあります。このまま切り替えますか？' : '저장되지 않은 급여 데이터가 있습니다. 전환하시겠습니까?';
+    if (!confirm(msg)) return;
+  }
+  currentYear = y;
+  currentMonth = m;
+  renderMonthTabs();
+  onMonthYearChange();
 }
 
 // 월/연도 변경 시 요율 자동 전환 + 알림
