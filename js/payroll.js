@@ -1,4 +1,4 @@
-// 수정: 2026-05-31 16:10 — 지급완료 달 입력 잠금 + 저장↔수정 버튼 전환
+// 수정: 2026-05-31 16:17 — 수정 버튼 배경색 어둡게(#b45309) — 🔓 아이콘 대비 개선
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -22,8 +22,8 @@ function _applyPaidLock(locked) {
   if (!saveBtn) return;
   if (locked) {
     saveBtn.onclick        = unlockPaidMonth;
-    saveBtn.style.background  = '#f59e0b';
-    saveBtn.style.borderColor = '#f59e0b';
+    saveBtn.style.background  = '#b45309';
+    saveBtn.style.borderColor = '#b45309';
     saveBtn.style.color       = '#fff';
     if (saveSvg) saveSvg.style.display = 'none';
     if (saveTxt) saveTxt.textContent = LANG === 'JP' ? '🔓 修正' : '🔓 수정';
