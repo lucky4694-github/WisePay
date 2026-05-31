@@ -1,4 +1,4 @@
-// 수정: 2026-05-31 16:54 — 지급완료 버튼: 저장 완료 상태에서만 활성
+// 수정: 2026-05-31 17:03 — saveCurrent 저장 직후 띠·지급완료버튼 즉시 갱신
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -611,6 +611,11 @@ function saveCurrent() {
   payrollDirty = false;
   const saveBtn = document.getElementById('btn-save');
   if(saveBtn) { saveBtn.style.background = ''; saveBtn.style.borderColor = ''; }
+
+  // 저장 직후 띠·지급완료 버튼 즉시 갱신 (GAS 응답 대기 불필요)
+  _payrollDataStatus = 'saved';
+  _updatePayrollStatus('saved');
+  renderPaidBtn();
 
   const logTarget = `${emp.name} (${currentYear}/${String(currentMonth).padStart(2,'0')})`;
   if(gasUrl && window._calc) {
