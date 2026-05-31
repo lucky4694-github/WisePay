@@ -1,4 +1,4 @@
-// 수정: 2026-05-31 16:24 — 페이지 복귀 시 수정/저장 버튼 상태 오류 수정
+// 수정: 2026-05-31 16:54 — 지급완료 버튼: 저장 완료 상태에서만 활성
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -637,16 +637,25 @@ function renderPaidBtn() {
   const ym = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
   const isPaid = paidYMs.has(ym);
   const span = document.getElementById('t-mark-paid-btn');
+  const isSaved = _payrollDataStatus === 'saved'; // 저장 완료 상태에서만 지급완료 가능
   if (isPaid) {
+    // 이미 지급완료 — 재처리 방지
     if (span) span.textContent = '✓ 지급완료됨';
     btn.disabled = true;
     btn.style.opacity = '0.55';
     btn.style.cursor = 'default';
-  } else {
+  } else if (isSaved) {
+    // 저장 완료 — 지급완료 가능
     if (span) span.textContent = '🔒 이 달 지급완료';
     btn.disabled = false;
     btn.style.opacity = '';
     btn.style.cursor = '';
+  } else {
+    // 임시값·미저장·미선택 — 비활성
+    if (span) span.textContent = '🔒 이 달 지급완료';
+    btn.disabled = true;
+    btn.style.opacity = '0.4';
+    btn.style.cursor = 'not-allowed';
   }
   // 상태 띠 + 입력 잠금 동기화 (markMonthAsPaid 직후 호출 시 즉시 반영)
   if (_payrollDataStatus !== 'none') {
