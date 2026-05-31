@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-31 12:40 — 지급완료 기능 1단계: markPaid 핸들러 + 지급완료이력/급여스냅샷 시트 추가
+// 수정: 2026-05-31 13:06 — getPaidYMs getSheetByName으로 교체(doGet 중 insertSheet 방지) + getAllData 개별 try/catch
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -406,21 +406,29 @@ function getUsers() {
 }
 
 function getAllData() {
+  var empData, payData, rateData, deletedData, paidData;
+  try { empData     = sheetToObjects(getSheet(SHEET_EMP));  } catch(e) { empData     = []; }
+  try { payData     = sheetToObjects(getSheet(SHEET_PAY));  } catch(e) { payData     = []; }
+  try { rateData    = sheetToObjects(getSheet(SHEET_RATE)); } catch(e) { rateData    = []; }
+  try { deletedData = getDeletedEmpIdsData();               } catch(e) { deletedData = []; }
+  try { paidData    = getPaidYMs();                         } catch(e) { paidData    = []; }
   return {
     ok: true,
     data: {
-      employees:     sheetToObjects(getSheet(SHEET_EMP)),
-      payrolls:      sheetToObjects(getSheet(SHEET_PAY)),
-      rateHistory:   sheetToObjects(getSheet(SHEET_RATE)),
-      deletedEmpIds: getDeletedEmpIdsData(),
-      paidYMs:       getPaidYMs()
+      employees:     empData,
+      payrolls:      payData,
+      rateHistory:   rateData,
+      deletedEmpIds: deletedData,
+      paidYMs:       paidData
     }
   };
 }
 
 function getPaidYMs() {
-  var sheet = getSheet(SHEET_PAID);
-  if (sheet.getLastRow() < 2) return [];
+  // getSheet()는 시트가 없을 때 insertSheet()를 호출하므로 doGet에서 사용 불가.
+  // getSheetByName()은 없으면 null만 반환하여 부작용 없음.
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PAID);
+  if (!sheet || sheet.getLastRow() < 2) return [];
   var vals = sheet.getDataRange().getValues();
   var hdrs = vals[0];
   var yCol = hdrs.indexOf('year');
