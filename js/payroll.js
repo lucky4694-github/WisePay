@@ -1,4 +1,4 @@
-// 수정: 2026-05-31 00:28 — onPayrollBlur 빈 함수 제거 + index.html 호출부 8곳 제거
+// 수정: 2026-05-31 12:40 — 지급완료 기능 1단계: renderPaidBtn + markMonthAsPaid 추가
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -69,6 +69,7 @@ function onMonthYearChange() {
     );
   }
   loadPayrollForm();
+  renderPaidBtn();
 }
 
 // ══ EMP SELECT ══
@@ -542,4 +543,89 @@ function saveCurrent() {
     showToast(LANG==='JP'?`${emp.name} ${currentMonth}月分を保存しました ✓`:`${emp.name} ${currentMonth}월분 저장됨 ✓`,'s');
     gasAppendLog(isNewPayroll ? '급여추가' : '급여수정', logTarget, '성공', '로컬만 저장');
   }
+}
+
+// ══ PAID STATUS ══
+function renderPaidBtn() {
+  const btn = document.getElementById('btn-mark-paid');
+  if (!btn) return;
+  const ym = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+  const isPaid = paidYMs.has(ym);
+  const span = document.getElementById('t-mark-paid-btn');
+  if (isPaid) {
+    if (span) span.textContent = '✓ 지급완료됨';
+    btn.disabled = true;
+    btn.style.opacity = '0.55';
+    btn.style.cursor = 'default';
+  } else {
+    if (span) span.textContent = '🔒 이 달 지급완료';
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.cursor = '';
+  }
+}
+
+async function markMonthAsPaid() {
+  if (typeof isWriteAuthorized === 'function' && !isWriteAuthorized()) {
+    showToast(LANG === 'JP' ? '管理者のみ操作できます' : '관리자만 사용 가능합니다', 'w');
+    return;
+  }
+  const ym = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+  if (paidYMs.has(ym)) {
+    showToast(LANG === 'JP' ? '既に支払済みです' : '이미 지급완료된 달입니다', 'w');
+    return;
+  }
+  const jp = LANG === 'JP';
+  const msg = jp
+    ? `${currentYear}年${currentMonth}月分の給与を支払済み処理します。全従業員が対象で、この時点のデータがスナップショットとして保存されます。続けますか？`
+    : `${currentYear}년 ${currentMonth}월분 급여를 지급완료 처리합니다. 전 직원이 대상이며, 이 시점의 데이터가 스냅샷으로 보존됩니다. 계속하시겠습니까？`;
+  if (!confirm(msg)) return;
+
+  // 이 달 전 사원의 급여 데이터 수집 + 계산값 포함
+  const paidAt = new Date().toISOString();
+  const snapPayrolls = [];
+  employees.forEach(emp => {
+    const pNo = String(emp.no).padStart(4, '0');
+    const key = `kyuyo_p_${pNo}_${currentYear}_${currentMonth}`;
+    const raw = localStorage.getItem(key);
+    if (!raw) return;
+    try {
+      const saved = JSON.parse(raw);
+      const c = calcPayrollData(saved, emp, currentYear, currentMonth);
+      const { koyoEnabled: _ke, r: _r, ...fields } = c;
+      snapPayrolls.push({ no: emp.no, name: emp.name, year: currentYear, month: currentMonth, ...fields });
+    } catch(e) {}
+  });
+
+  if (snapPayrolls.length === 0) {
+    showToast(jp ? 'この月の給与データがありません' : '이 달 저장된 급여 데이터가 없습니다', 'w');
+    return;
+  }
+
+  // GAS 전송
+  if (gasUrl) {
+    const auth = typeof gasWriteAuth === 'function' ? gasWriteAuth() : {};
+    try {
+      await fetch(gasUrl, {
+        method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          type: 'markPaid',
+          year: currentYear, month: currentMonth,
+          paidAt,
+          paidBy: (typeof currentUser !== 'undefined' && currentUser) ? (currentUser.name || currentUser.id || '') : '',
+          payrolls: snapPayrolls,
+          ...auth
+        })
+      });
+    } catch(e) {
+      showToast(jp ? 'GAS送信失敗。ローカルのみ更新します' : 'GAS 전송 실패. 로컬만 업데이트합니다', 'w');
+    }
+  }
+
+  // 로컬 상태 업데이트
+  paidYMs.add(ym);
+  localStorage.setItem(LS.paidYMs, JSON.stringify([...paidYMs]));
+  renderPaidBtn();
+  showToast(jp ? `${currentYear}年${currentMonth}月分 支払済み処理完了 ✓` : `${currentYear}년 ${currentMonth}월분 지급완료 처리됨 ✓`, 's');
+  gasAppendLog('지급완료', `${currentYear}/${String(currentMonth).padStart(2,'0')} (${snapPayrolls.length}명)`, '성공', '');
 }

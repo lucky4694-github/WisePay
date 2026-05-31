@@ -1,4 +1,4 @@
-// 수정: 2026-05-31 00:57 — collectAllPayrolls: _uid/_token 백업 데이터에서 제거
+// 수정: 2026-05-31 12:40 — 지급완료 기능 1단계: autoLoadFromGas에 paidYMs 로드 추가
 'use strict';
 
 // ── 동기화 로그 기록 헬퍼 (fire-and-forget) ──
@@ -353,8 +353,14 @@ async function autoLoadFromGas() {
       const needsSync = migrateRateHistory();
       if (needsSync) uploadRateHistoryToGas();
     }
+    // 지급완료 연월 동기화
+    if (Array.isArray(d.paidYMs) && d.paidYMs.length > 0) {
+      d.paidYMs.forEach(ym => paidYMs.add(ym));
+      localStorage.setItem(LS.paidYMs, JSON.stringify([...paidYMs]));
+    }
     renderEmpSelect();
     loadPayrollForm();
+    renderPaidBtn();
     applyRatesForYM(currentYear, currentMonth);
     buildAnnualYearSel();
     buildAnnualEmpSel();

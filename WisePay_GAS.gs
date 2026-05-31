@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-30 23:43 — saveSheet: 동적 헤더로 신규 컬럼(kaigo/kodomo/koyo/hyo) 자동 추가 확인
+// 수정: 2026-05-31 12:40 — 지급완료 기능 1단계: markPaid 핸들러 + 지급완료이력/급여스냅샷 시트 추가
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -12,6 +12,8 @@ const SHEET_RATE    = '보험료율데이터';
 const SHEET_LOG     = 'WisePay로그';
 const SHEET_USERS   = 'users';
 const SHEET_DELETED = 'deleted_emp_ids';
+const SHEET_PAID    = '지급완료이력';
+const SHEET_SNAP    = '급여스냅샷';
 
 // 협회けんぽ URL (2025년 사이트 개편 후 변경된 URL)
 const KENPO_INDEX_URL = 'https://www.kyoukaikenpo.or.jp/about/business/insurance_rate/rate_prefectures/';
@@ -92,6 +94,71 @@ function doPost(e) {
           }
         }
       }
+      return jsonResponse({ ok: true });
+    }
+    if (data.type === 'markPaid') {
+      if (!verifyWriteToken(data)) return jsonResponse({ ok: false, error: 'Unauthorized' });
+      var mpYear     = parseInt(data.year);
+      var mpMonth    = parseInt(data.month);
+      var mpPaidAt   = String(data.paidAt  || '');
+      var mpPaidBy   = String(data.paidBy  || '');
+      var mpPayrolls = data.payrolls || [];
+
+      // 1. 지급완료이력 기록 (중복 방지)
+      var paidSheet = getSheet(SHEET_PAID);
+      if (paidSheet.getLastRow() === 0) {
+        paidSheet.getRange(1, 1, 1, 4).setValues([['year', 'month', 'paidAt', 'paidBy']]);
+      }
+      var paidVals = paidSheet.getDataRange().getValues();
+      var paidHdrs = paidVals[0] || [];
+      var pYCol = paidHdrs.indexOf('year');
+      var pMCol = paidHdrs.indexOf('month');
+      var alreadyPaid = pYCol >= 0 && paidVals.slice(1).some(function(r) {
+        return parseInt(r[pYCol]) === mpYear && parseInt(r[pMCol]) === mpMonth;
+      });
+      if (!alreadyPaid) {
+        paidSheet.appendRow([mpYear, mpMonth, mpPaidAt, mpPaidBy]);
+      }
+
+      // 2. 급여스냅샷 시트에 누적 기록
+      if (mpPayrolls.length > 0) {
+        var snapSheet = getSheet(SHEET_SNAP);
+        var snapshotAt = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
+        var cleaned = mpPayrolls.map(function(p) {
+          var c = {};
+          Object.keys(p).forEach(function(k) {
+            if (k !== '_uid' && k !== '_token') c[k] = p[k];
+          });
+          c.paidAt     = mpPaidAt;
+          c.snapshotAt = snapshotAt;
+          return c;
+        });
+        // 전체 키 수집
+        var allKeys = [];
+        var keySet  = {};
+        cleaned.forEach(function(r) {
+          Object.keys(r).forEach(function(k) { if (!keySet[k]) { keySet[k] = true; allKeys.push(k); } });
+        });
+        // 헤더 초기화 또는 신규 컬럼 추가
+        if (snapSheet.getLastRow() === 0) {
+          snapSheet.getRange(1, 1, 1, allKeys.length).setValues([allKeys]);
+        }
+        var snapHdrs = snapSheet.getRange(1, 1, 1, snapSheet.getLastColumn()).getValues()[0];
+        var newHdrs  = allKeys.filter(function(k) { return snapHdrs.indexOf(k) < 0; });
+        if (newHdrs.length > 0) {
+          snapSheet.getRange(1, snapHdrs.length + 1, 1, newHdrs.length).setValues([newHdrs]);
+          newHdrs.forEach(function(k) { snapHdrs.push(k); });
+        }
+        var rows = cleaned.map(function(p) {
+          return snapHdrs.map(function(h) {
+            var v = p[h] !== undefined ? p[h] : '';
+            return (Array.isArray(v) || (v !== null && typeof v === 'object' && !(v instanceof Date)))
+              ? JSON.stringify(v) : v;
+          });
+        });
+        snapSheet.getRange(snapSheet.getLastRow() + 1, 1, rows.length, snapHdrs.length).setValues(rows);
+      }
+
       return jsonResponse({ ok: true });
     }
     if (data.type === 'appendLog') {
@@ -345,9 +412,25 @@ function getAllData() {
       employees:     sheetToObjects(getSheet(SHEET_EMP)),
       payrolls:      sheetToObjects(getSheet(SHEET_PAY)),
       rateHistory:   sheetToObjects(getSheet(SHEET_RATE)),
-      deletedEmpIds: getDeletedEmpIdsData()
+      deletedEmpIds: getDeletedEmpIdsData(),
+      paidYMs:       getPaidYMs()
     }
   };
+}
+
+function getPaidYMs() {
+  var sheet = getSheet(SHEET_PAID);
+  if (sheet.getLastRow() < 2) return [];
+  var vals = sheet.getDataRange().getValues();
+  var hdrs = vals[0];
+  var yCol = hdrs.indexOf('year');
+  var mCol = hdrs.indexOf('month');
+  if (yCol < 0 || mCol < 0) return [];
+  return vals.slice(1).map(function(r) {
+    var y = parseInt(r[yCol]);
+    var m = parseInt(r[mCol]);
+    return (!isNaN(y) && !isNaN(m)) ? (y + '-' + String(m).padStart(2, '0')) : null;
+  }).filter(Boolean);
 }
 
 function getDeletedEmpIdsData() {

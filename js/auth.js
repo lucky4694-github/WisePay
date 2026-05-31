@@ -237,11 +237,13 @@ function renderNavForRole() {
 function applyViewerRestrictions() {
   if (!currentUser || currentUser.role === 'admin') return;
 
-  // 저장·삭제 버튼 숨김
+  // 저장·삭제·지급완료 버튼 숨김
   const saveBtn = document.getElementById('btn-save');
   const delBtn  = document.getElementById('btn-del-month');
+  const paidBtn = document.getElementById('btn-mark-paid');
   if (saveBtn) saveBtn.style.display = 'none';
   if (delBtn)  delBtn.style.display  = 'none';
+  if (paidBtn) paidBtn.style.display = 'none';
 
   // 급여 입력 필드 읽기 전용
   document.querySelectorAll('#page-payroll .row-input').forEach(inp => {
