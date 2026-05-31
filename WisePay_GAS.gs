@@ -1,5 +1,5 @@
 // WisePay GAS Script
-// 수정: 2026-05-31 13:06 — getPaidYMs getSheetByName으로 교체(doGet 중 insertSheet 방지) + getAllData 개별 try/catch
+// 수정: 2026-05-31 13:25 — doGet 경로 전체 getSheet→getSheetByName 통일 + getAllData getActiveSpreadsheet 1회화
 // 이 파일 전체를 Google Apps Script(code.gs)에 붙여넣고 재배포하세요.
 // 배포 설정: 웹 앱 > 액세스 권한: 전체(Everyone)
 //
@@ -280,6 +280,7 @@ function getSheet(name) {
 }
 
 function sheetToObjects(sheet) {
+  if (!sheet) return [];
   const data = sheet.getDataRange().getValues();
   if (data.length < 2) return [];
   const headers = data[0];
@@ -392,8 +393,8 @@ function verifyWriteToken(data) {
 }
 
 function getUsers() {
-  var sheet = getSheet(SHEET_USERS);
-  var rows  = sheetToObjects(sheet);
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_USERS);
+  var rows  = sheetToObjects(sheet); // sheetToObjects는 null 안전 처리됨
   var safe  = rows.map(function(u) {
     return {
       id:          String(u['ID']       || '').trim(),
@@ -406,12 +407,13 @@ function getUsers() {
 }
 
 function getAllData() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(); // 1회만 취득
   var empData, payData, rateData, deletedData, paidData;
-  try { empData     = sheetToObjects(getSheet(SHEET_EMP));  } catch(e) { empData     = []; }
-  try { payData     = sheetToObjects(getSheet(SHEET_PAY));  } catch(e) { payData     = []; }
-  try { rateData    = sheetToObjects(getSheet(SHEET_RATE)); } catch(e) { rateData    = []; }
-  try { deletedData = getDeletedEmpIdsData();               } catch(e) { deletedData = []; }
-  try { paidData    = getPaidYMs();                         } catch(e) { paidData    = []; }
+  try { empData     = sheetToObjects(ss.getSheetByName(SHEET_EMP));  } catch(e) { empData     = []; }
+  try { payData     = sheetToObjects(ss.getSheetByName(SHEET_PAY));  } catch(e) { payData     = []; }
+  try { rateData    = sheetToObjects(ss.getSheetByName(SHEET_RATE)); } catch(e) { rateData    = []; }
+  try { deletedData = getDeletedEmpIdsData(ss);                       } catch(e) { deletedData = []; }
+  try { paidData    = getPaidYMs(ss);                                 } catch(e) { paidData    = []; }
   return {
     ok: true,
     data: {
@@ -424,10 +426,8 @@ function getAllData() {
   };
 }
 
-function getPaidYMs() {
-  // getSheet()는 시트가 없을 때 insertSheet()를 호출하므로 doGet에서 사용 불가.
-  // getSheetByName()은 없으면 null만 반환하여 부작용 없음.
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PAID);
+function getPaidYMs(ss) {
+  var sheet = (ss || SpreadsheetApp.getActiveSpreadsheet()).getSheetByName(SHEET_PAID);
   if (!sheet || sheet.getLastRow() < 2) return [];
   var vals = sheet.getDataRange().getValues();
   var hdrs = vals[0];
@@ -441,9 +441,9 @@ function getPaidYMs() {
   }).filter(Boolean);
 }
 
-function getDeletedEmpIdsData() {
-  var sheet = getSheet(SHEET_DELETED);
-  if (sheet.getLastRow() < 2) return [];
+function getDeletedEmpIdsData(ss) {
+  var sheet = (ss || SpreadsheetApp.getActiveSpreadsheet()).getSheetByName(SHEET_DELETED);
+  if (!sheet || sheet.getLastRow() < 2) return [];
   var vals = sheet.getDataRange().getValues();
   var hdrs = vals[0];
   var noCol = hdrs.indexOf('emp_no');
