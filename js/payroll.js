@@ -1,4 +1,4 @@
-// 수정: 2026-05-31 12:40 — 지급완료 기능 1단계: renderPaidBtn + markMonthAsPaid 추가
+// 수정: 2026-05-31 15:28 — 지급완료 기능 2단계: 상태 띠 'paid' 표시 추가
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -7,8 +7,19 @@ function _updatePayrollStatus(status) {
   const el = document.getElementById('payroll-data-status');
   if (!el) return;
   const jp = LANG === 'JP';
-  // 'none': 사원 미선택 → 완전 숨김
   if (status === 'none') { el.style.display = 'none'; return; }
+  // 지급완료 날짜 문자열 (paidDetails에 있으면 표시)
+  let paidDateTxt = '';
+  if (status === 'paid') {
+    const ym = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+    const iso = paidDetails && paidDetails[ym];
+    if (iso) {
+      try {
+        const d = new Date(iso);
+        paidDateTxt = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+      } catch(e) {}
+    }
+  }
   const cfg = {
     saved:  { bg:'#f0fdf4', color:'#166534', border:'#bbf7d0',
       text: jp ? '✅ この月のデータが保存されています' : '✅ 이 달 저장된 데이터' },
@@ -16,6 +27,8 @@ function _updatePayrollStatus(status) {
       text: jp ? '📋 仮入力値（未保存）' : '📋 임시 입력값 (미저장)' },
     empty:  { bg:'var(--surface2)', color:'var(--text3)', border:'var(--border)',
       text: jp ? '— 入力なし' : '— 입력값 없음' },
+    paid:   { bg:'#eff6ff', color:'#1e40af', border:'#bfdbfe',
+      text: (jp ? '🔒 支払済み' : '🔒 지급완료') + (paidDateTxt ? ` (${paidDateTxt})` : '') },
   }[status] || { bg:'var(--surface2)', color:'var(--text3)', border:'var(--border)', text:'' };
   el.style.cssText = `display:flex;align-items:center;padding:5px 16px;font-size:11px;font-weight:600;background:${cfg.bg};color:${cfg.color};border-top:1px solid ${cfg.border};border-bottom:1px solid ${cfg.border};`;
   el.textContent = cfg.text;
@@ -240,8 +253,11 @@ function loadPayrollForm() {
       }
     }
   }
-  _payrollDataStatus = _dataStatus;
-  _updatePayrollStatus(_dataStatus);
+  // 지급완료된 달이면 'paid' 상태로 재정의
+  const _ymCheck = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
+  const _finalStatus = (_dataStatus !== 'none' && paidYMs.has(_ymCheck)) ? 'paid' : _dataStatus;
+  _payrollDataStatus = _finalStatus;
+  _updatePayrollStatus(_finalStatus);
   updateEmpHeader();
   payrollDirty = false;
   const saveBtn = document.getElementById('btn-save');
@@ -563,6 +579,10 @@ function renderPaidBtn() {
     btn.style.opacity = '';
     btn.style.cursor = '';
   }
+  // 상태 띠 동기화 (markMonthAsPaid 직후 호출 시 즉시 반영)
+  if (_payrollDataStatus !== 'none') {
+    _updatePayrollStatus(isPaid ? 'paid' : _payrollDataStatus);
+  }
 }
 
 async function markMonthAsPaid() {
@@ -625,6 +645,8 @@ async function markMonthAsPaid() {
   // 로컬 상태 업데이트
   paidYMs.add(ym);
   localStorage.setItem(LS.paidYMs, JSON.stringify([...paidYMs]));
+  paidDetails[ym] = paidAt;
+  localStorage.setItem(LS.paidDetails, JSON.stringify(paidDetails));
   renderPaidBtn();
   showToast(jp ? `${currentYear}年${currentMonth}月分 支払済み処理完了 ✓` : `${currentYear}년 ${currentMonth}월분 지급완료 처리됨 ✓`, 's');
   gasAppendLog('지급완료', `${currentYear}/${String(currentMonth).padStart(2,'0')} (${snapPayrolls.length}명)`, '성공', '');

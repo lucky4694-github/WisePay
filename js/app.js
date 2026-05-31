@@ -1,4 +1,4 @@
-﻿// 수정: 2026-05-31 12:40 — 지급완료 기능 1단계: paidYMs 초기 로드 + renderPaidBtn 호출
+﻿// 수정: 2026-05-31 15:28 — 지급완료 기능 2단계: paidDetails 초기 로드 추가
 'use strict';
 
 // families(16세 이상) 기반으로 employees의 fuyouCount를 재계산하여 저장
@@ -74,7 +74,8 @@ function initApp() {
   try { const s = localStorage.getItem(LS.emp); if(s) { employees = JSON.parse(s).filter(e => e && !e.deleted); employees.forEach(e=>{ if(e.shaho_start) e.shaho_start=normalizeYM(e.shaho_start); if(e.join) e.join=normalizeDate(e.join); if(e.leave) e.leave=normalizeDate(e.leave); if(e.birth) e.birth=normalizeDate(e.birth); }); } } catch(e){}
   try { const s = localStorage.getItem(LS.rateHistory); if(s) rateHistory = JSON.parse(s); } catch(e){}
   try { const s = localStorage.getItem(LS.deletedEmpIds); if(s) deletedEmpIds = JSON.parse(s); } catch(e){}
-  try { const s = localStorage.getItem(LS.paidYMs); if(s) paidYMs = new Set(JSON.parse(s)); } catch(e){}
+  try { const s = localStorage.getItem(LS.paidYMs);     if(s) paidYMs     = new Set(JSON.parse(s)); } catch(e){}
+  try { const s = localStorage.getItem(LS.paidDetails); if(s) paidDetails = JSON.parse(s);           } catch(e){}
   // 마이그레이션
   syncFuyouFromFamilies();
   migrateRateHistory();

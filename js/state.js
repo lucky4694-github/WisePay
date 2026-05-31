@@ -1,5 +1,5 @@
 ﻿'use strict';
-// 수정: 2026-05-31 12:40 — 지급완료 기능 1단계: paidYMs 상태 + LS 키 추가
+// 수정: 2026-05-31 15:28 — 지급완료 기능 2단계: paidDetails(지급일시) 상태 추가
 let LANG = 'KR';
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth() + 1;
@@ -28,11 +28,12 @@ let employees = [];
 // 각 입력란의 이전 값 저장용 (ESC 복원)
 const prevValues = {};
 
-const LS = { emp:'kyuyo_emp', rates:'kyuyo_rates', rateHistory:'kyuyo_rate_history', gas:'kyuyo_gas', lang:'kyuyo_lang', deletedEmpIds:'kyuyo_deleted_emp_ids', paidYMs:'kyuyo_paid_yms' };
+const LS = { emp:'kyuyo_emp', rates:'kyuyo_rates', rateHistory:'kyuyo_rate_history', gas:'kyuyo_gas', lang:'kyuyo_lang', deletedEmpIds:'kyuyo_deleted_emp_ids', paidYMs:'kyuyo_paid_yms', paidDetails:'kyuyo_paid_details' };
 // emp.no: 앱 전체의 Primary Key — 사원·급여 데이터 연결 기준, 재사용 불가
 let deletedEmpIds = [];    // localStorage 기반 삭제 ID 목록 (하위 호환)
 let gasDeletedEmpIds = []; // GAS deleted_emp_ids 시트 기반 목록 (우선 기준)
-let paidYMs = new Set(); // 지급완료된 연월 집합 — "YYYY-MM" 형식
+let paidYMs     = new Set(); // 지급완료된 연월 집합 — "YYYY-MM" 형식
+let paidDetails = {};        // 지급완료 시각 맵 — { "YYYY-MM": paidAt ISO string }
 let payrollDirty = false; // 급여명세 미저장 여부
 let _pendingScrapedRates = null; // 스크래핑 결과 임시 보관
 
