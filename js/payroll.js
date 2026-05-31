@@ -1,4 +1,4 @@
-// 수정: 2026-05-31 16:17 — 수정 버튼 배경색 어둡게(#b45309) — 🔓 아이콘 대비 개선
+// 수정: 2026-05-31 16:19 — 수정 버튼 배경색 녹색(#16a34a)으로 변경
 'use strict';
 
 let _payrollDataStatus = 'none';
@@ -22,8 +22,8 @@ function _applyPaidLock(locked) {
   if (!saveBtn) return;
   if (locked) {
     saveBtn.onclick        = unlockPaidMonth;
-    saveBtn.style.background  = '#b45309';
-    saveBtn.style.borderColor = '#b45309';
+    saveBtn.style.background  = '#16a34a';
+    saveBtn.style.borderColor = '#16a34a';
     saveBtn.style.color       = '#fff';
     if (saveSvg) saveSvg.style.display = 'none';
     if (saveTxt) saveTxt.textContent = LANG === 'JP' ? '🔓 修正' : '🔓 수정';
