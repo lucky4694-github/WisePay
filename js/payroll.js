@@ -1,7 +1,50 @@
-// 수정: 2026-05-31 16:03 — 이번 달 버튼 gotoToday() 추가
+// 수정: 2026-05-31 16:10 — 지급완료 달 입력 잠금 + 저장↔수정 버튼 전환
 'use strict';
 
 let _payrollDataStatus = 'none';
+let _paidLocked = false; // 지급완료 달 잠금 여부
+
+// 입력란 잠금/해제 + 저장↔수정 버튼 전환
+function _applyPaidLock(locked) {
+  _paidLocked = locked;
+  const isViewer = typeof isWriteAuthorized === 'function' && !isWriteAuthorized();
+  if (!isViewer) {
+    document.querySelectorAll('#page-payroll .row-input').forEach(inp => {
+      inp.readOnly          = locked;
+      inp.style.background  = locked ? 'var(--surface2)' : '';
+      inp.style.cursor      = locked ? 'default' : '';
+      inp.style.borderColor = locked ? 'transparent' : '';
+    });
+  }
+  const saveBtn = document.getElementById('btn-save');
+  const saveSvg = saveBtn ? saveBtn.querySelector('svg') : null;
+  const saveTxt = document.getElementById('t-save-btn');
+  if (!saveBtn) return;
+  if (locked) {
+    saveBtn.onclick        = unlockPaidMonth;
+    saveBtn.style.background  = '#f59e0b';
+    saveBtn.style.borderColor = '#f59e0b';
+    saveBtn.style.color       = '#fff';
+    if (saveSvg) saveSvg.style.display = 'none';
+    if (saveTxt) saveTxt.textContent = LANG === 'JP' ? '🔓 修正' : '🔓 수정';
+  } else {
+    saveBtn.onclick        = saveCurrent;
+    saveBtn.style.background  = '';
+    saveBtn.style.borderColor = '';
+    saveBtn.style.color       = '';
+    if (saveSvg) saveSvg.style.display = '';
+    if (saveTxt) saveTxt.textContent = LANG === 'JP' ? '保存' : '저장';
+  }
+}
+
+function unlockPaidMonth() {
+  const jp = LANG === 'JP';
+  const msg = jp
+    ? `${currentYear}年${currentMonth}月分は支払済み給与です。\n既に支払われた記録を修正すると、実際の支払額と異なる場合があります。\n修正しますか？`
+    : `${currentYear}년 ${currentMonth}월분은 이미 지급완료된 급여입니다.\n이미 지급된 기록을 수정하면 실제 지급액과 달라질 수 있습니다.\n수정하시겠습니까?`;
+  if (!confirm(msg)) return;
+  _applyPaidLock(false);
+}
 
 function _updatePayrollStatus(status) {
   const el = document.getElementById('payroll-data-status');
@@ -269,11 +312,13 @@ function loadPayrollForm() {
       }
     }
   }
-  // 지급완료된 달이면 'paid' 상태로 재정의
+  // 지급완료된 달이면 'paid' 상태로 재정의 + 입력 잠금
   const _ymCheck = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
-  const _finalStatus = (_dataStatus !== 'none' && paidYMs.has(_ymCheck)) ? 'paid' : _dataStatus;
+  const _isPaid   = _dataStatus !== 'none' && paidYMs.has(_ymCheck);
+  const _finalStatus = _isPaid ? 'paid' : _dataStatus;
   _payrollDataStatus = _finalStatus;
   _updatePayrollStatus(_finalStatus);
+  _applyPaidLock(_isPaid);
   updateEmpHeader();
   payrollDirty = false;
   const saveBtn = document.getElementById('btn-save');
@@ -556,15 +601,6 @@ function saveCurrent() {
   if(!employees.length) { showToast(LANG==='JP'?'従業員を先に登録してください':'사원을 먼저 등록해 주세요','w'); return; }
   const emp=employees[currentEmpIdx];
   if(!emp) return;
-  // 지급완료 달 저장 보호
-  const _saveYm = `${currentYear}-${String(currentMonth).padStart(2,'0')}`;
-  if (paidYMs.has(_saveYm)) {
-    const jp = LANG === 'JP';
-    const warnMsg = jp
-      ? `${currentYear}年${currentMonth}月分は支払済み給与です。\n既に支払われた記録を修正すると、実際の支払額と異なる場合があります。\n本当に修正しますか？`
-      : `${currentYear}년 ${currentMonth}월분은 이미 지급완료된 급여입니다.\n이미 지급된 기록을 수정하면 실제 지급액과 달라질 수 있습니다.\n정말 수정하시겠습니까?`;
-    if (!confirm(warnMsg)) return;
-  }
   recalc();
   const key=`kyuyo_p_${String(emp.no).padStart(4,'0')}_${currentYear}_${currentMonth}`;
   const isNewPayroll = !localStorage.getItem(key);
@@ -612,9 +648,10 @@ function renderPaidBtn() {
     btn.style.opacity = '';
     btn.style.cursor = '';
   }
-  // 상태 띠 동기화 (markMonthAsPaid 직후 호출 시 즉시 반영)
+  // 상태 띠 + 입력 잠금 동기화 (markMonthAsPaid 직후 호출 시 즉시 반영)
   if (_payrollDataStatus !== 'none') {
     _updatePayrollStatus(isPaid ? 'paid' : _payrollDataStatus);
+    _applyPaidLock(isPaid);
   }
 }
 
